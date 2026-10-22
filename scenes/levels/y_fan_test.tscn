@@ -1,0 +1,77 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/elements/block.tscn" id="1_block"]
+[ext_resource type="PackedScene" path="res://scenes/elements/crate.tscn" id="2_crate"]
+[ext_resource type="PackedScene" path="res://scenes/elements/fan.tscn" id="3_fan"]
+[ext_resource type="PackedScene" path="res://scenes/elements/lever.tscn" id="4_lever"]
+[ext_resource type="PackedScene" path="res://scenes/elements/exit.tscn" id="5_exit"]
+[ext_resource type="PackedScene" uid="uid://d0cklo3chni14" path="res://scenes/player.tscn" id="6_player"]
+
+[sub_resource type="StandardMaterial3D" id="Material_board"]
+albedo_color = Color(0.17, 0.27, 0.52, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_board"]
+material = SubResource("Material_board")
+size = Vector3(13, 7, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_board"]
+size = Vector3(13, 7, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bound_side"]
+size = Vector3(1, 9, 7)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bound_top"]
+size = Vector3(15, 1, 7)
+
+[node name="FanTest" type="Node3D"]
+metadata/flat_front_z = 4.5
+
+[node name="Board" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -0.75)
+
+[node name="Mesh" type="MeshInstance3D" parent="Board"]
+mesh = SubResource("BoxMesh_board")
+
+[node name="Collision" type="CollisionShape3D" parent="Board"]
+shape = SubResource("BoxShape3D_board")
+
+[node name="BoardBounds" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Left" type="CollisionShape3D" parent="BoardBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 2.5, 2)
+shape = SubResource("BoxShape3D_bound_side")
+
+[node name="Right" type="CollisionShape3D" parent="BoardBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 2.5, 2)
+shape = SubResource("BoxShape3D_bound_side")
+
+[node name="Top" type="CollisionShape3D" parent="BoardBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 2)
+shape = SubResource("BoxShape3D_bound_top")
+
+[node name="Floor" parent="." instance=ExtResource("1_block")]
+transform = Transform3D(13, 0, 0, 0, 1, 0, 0, 0, 5, 0, -0.5, 2)
+
+[node name="Fan" parent="." instance=ExtResource("3_fan")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -0.5)
+
+[node name="FanLever" parent="." instance=ExtResource("4_lever")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 3.5)
+target = NodePath("../Fan")
+
+[node name="Wall" parent="." instance=ExtResource("1_block")]
+transform = Transform3D(1, 0, 0, 0, 3, 0, 0, 0, 1, 2, 1.5, 1)
+
+[node name="Crate" parent="." instance=ExtResource("2_crate")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.48, 3)
+
+[node name="Exit" parent="." instance=ExtResource("5_exit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 2, 5, 0.5, 0.5)
+
+[node name="Player" parent="." instance=ExtResource("6_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.5, 1)
+
+[node name="Light" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 10, 0)

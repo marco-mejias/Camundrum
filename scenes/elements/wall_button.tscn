@@ -1,0 +1,57 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/WallButton.cpp" id="1_button"]
+
+[sub_resource type="StandardMaterial3D" id="Material_frame"]
+albedo_color = Color(0.25, 0.25, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_frame"]
+material = SubResource("Material_frame")
+size = Vector3(0.6, 0.06, 0.6)
+
+[sub_resource type="StandardMaterial3D" id="Material_off"]
+albedo_color = Color(0.95, 0.6, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_off"]
+material = SubResource("Material_off")
+size = Vector3(0.4, 0.14, 0.4)
+
+[sub_resource type="StandardMaterial3D" id="Material_on"]
+albedo_color = Color(0.35, 0.9, 0.5, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_on"]
+material = SubResource("Material_on")
+size = Vector3(0.4, 0.04, 0.4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_footprint"]
+size = Vector3(0.6, 0.18, 0.6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_trigger"]
+size = Vector3(1.2, 1.2, 1.2)
+
+[node name="WallButton" type="Area3D" groups=["keep_clear"]]
+collision_layer = 0
+collision_mask = 4
+script = ExtResource("1_button")
+
+[node name="Frame" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
+mesh = SubResource("BoxMesh_frame")
+
+[node name="CapOff" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+mesh = SubResource("BoxMesh_off")
+
+[node name="CapOn" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0)
+visible = false
+mesh = SubResource("BoxMesh_on")
+
+[node name="Footprint" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, 0)
+shape = SubResource("BoxShape3D_footprint")
+disabled = true
+
+[node name="Trigger" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("BoxShape3D_trigger")

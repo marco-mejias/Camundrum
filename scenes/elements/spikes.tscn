@@ -1,0 +1,47 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/Hazard.cpp" id="1_hazard"]
+
+[sub_resource type="StandardMaterial3D" id="Material_spike"]
+albedo_color = Color(0.85, 0.85, 0.9, 1)
+metallic = 0.6
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_spike"]
+material = SubResource("Material_spike")
+top_radius = 0.0
+bottom_radius = 0.16
+height = 0.45
+radial_segments = 6
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_solid"]
+size = Vector3(1, 0.4, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_trigger"]
+size = Vector3(1.1, 0.55, 0.9)
+
+[node name="Spikes" type="Area3D" groups=["depth"]]
+collision_layer = 0
+collision_mask = 4
+script = ExtResource("1_hazard")
+
+[node name="Solid" type="StaticBody3D" parent="."]
+
+[node name="Collision" type="CollisionShape3D" parent="Solid"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+shape = SubResource("BoxShape3D_solid")
+
+[node name="Trigger" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+shape = SubResource("BoxShape3D_trigger")
+
+[node name="SpikeA" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0.225, 0)
+mesh = SubResource("CylinderMesh_spike")
+
+[node name="SpikeB" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.225, 0)
+mesh = SubResource("CylinderMesh_spike")
+
+[node name="SpikeC" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 0.225, 0)
+mesh = SubResource("CylinderMesh_spike")

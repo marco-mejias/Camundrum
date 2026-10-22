@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/Turntable.cpp" id="1_turntable"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_deck"]
+size = Vector3(7, 7, 12)
+
+[node name="BoardLayer" type="Node3D" groups=["carrier"]]
+script = ExtResource("1_turntable")
+turn_axis = 1
+
+[node name="Deck" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 4
+
+[node name="Collision" type="CollisionShape3D" parent="Deck"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
+shape = SubResource("BoxShape3D_deck")

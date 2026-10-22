@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/BoardPlate.cpp" id="1_plate"]
+
+[sub_resource type="StandardMaterial3D" id="Material_frame"]
+albedo_color = Color(0.4, 0.38, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_frame"]
+material = SubResource("Material_frame")
+size = Vector3(0.96, 0.96, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="Material_button"]
+albedo_color = Color(0.9, 0.78, 0.25, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_button"]
+material = SubResource("Material_button")
+size = Vector3(0.72, 0.72, 0.1)
+
+[node name="BoardPlate" type="Node3D" groups=["swap_fixed"]]
+script = ExtResource("1_plate")
+
+[node name="Frame" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.02)
+mesh = SubResource("BoxMesh_frame")
+
+[node name="Button" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.07)
+mesh = SubResource("BoxMesh_button")

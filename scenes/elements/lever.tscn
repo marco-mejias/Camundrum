@@ -1,0 +1,48 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/Lever.cpp" id="1_lever"]
+
+[sub_resource type="StandardMaterial3D" id="Material_base"]
+albedo_color = Color(0.35, 0.35, 0.4, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_base"]
+material = SubResource("Material_base")
+size = Vector3(0.6, 0.2, 0.6)
+
+[sub_resource type="StandardMaterial3D" id="Material_stick"]
+albedo_color = Color(0.95, 0.8, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_stick"]
+material = SubResource("Material_stick")
+size = Vector3(0.1, 0.6, 0.1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_footprint"]
+size = Vector3(0.6, 0.8, 0.6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_trigger"]
+size = Vector3(1.4, 1.2, 1)
+
+[node name="Lever" type="Area3D" groups=["depth", "keep_clear"]]
+collision_layer = 0
+collision_mask = 4
+script = ExtResource("1_lever")
+
+[node name="Base" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+mesh = SubResource("BoxMesh_base")
+
+[node name="Handle" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+
+[node name="Stick" type="MeshInstance3D" parent="Handle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("BoxMesh_stick")
+
+[node name="Trigger" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("BoxShape3D_trigger")
+
+[node name="Footprint" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("BoxShape3D_footprint")
+disabled = true

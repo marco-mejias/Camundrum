@@ -1,0 +1,127 @@
+[gd_scene format=3 uid="uid://ce414rm3wn6np"]
+
+[ext_resource type="PackedScene" path="res://scenes/elements/block.tscn" id="1_block"]
+[ext_resource type="PackedScene" path="res://scenes/elements/exit.tscn" id="5_exit"]
+[ext_resource type="PackedScene" uid="uid://d0cklo3chni14" path="res://scenes/player.tscn" id="6_player"]
+[ext_resource type="PackedScene" path="res://scenes/elements/robot.tscn" id="7_robot"]
+[ext_resource type="PackedScene" path="res://scenes/elements/view_block.tscn" id="9_view"]
+[ext_resource type="PackedScene" path="res://scenes/elements/plate.tscn" id="10_plate"]
+[ext_resource type="PackedScene" path="res://scenes/elements/door.tscn" id="11_door"]
+
+[sub_resource type="StandardMaterial3D" id="Material_board"]
+albedo_color = Color(0.17, 0.27, 0.52, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_board"]
+material = SubResource("Material_board")
+size = Vector3(19, 10, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_board"]
+size = Vector3(19, 10, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bound_side"]
+size = Vector3(1, 12, 7)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bound_top"]
+size = Vector3(21, 1, 7)
+
+[node name="GlassLift" type="Node3D" unique_id=1752506870]
+metadata/flat_front_z = 4.5
+metadata/starting_view = 0
+
+[node name="Board" type="StaticBody3D" parent="." unique_id=1076836665]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, -0.75)
+
+[node name="Mesh" type="MeshInstance3D" parent="Board" unique_id=2043437670]
+mesh = SubResource("BoxMesh_board")
+
+[node name="Collision" type="CollisionShape3D" parent="Board" unique_id=688162967]
+shape = SubResource("BoxShape3D_board")
+
+[node name="BoardBounds" type="StaticBody3D" parent="." unique_id=1827755870]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Left" type="CollisionShape3D" parent="BoardBounds" unique_id=2040028526]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 4, 2)
+shape = SubResource("BoxShape3D_bound_side")
+
+[node name="Right" type="CollisionShape3D" parent="BoardBounds" unique_id=1181543080]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 4, 2)
+shape = SubResource("BoxShape3D_bound_side")
+
+[node name="Top" type="CollisionShape3D" parent="BoardBounds" unique_id=623556851]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.5, 2)
+shape = SubResource("BoxShape3D_bound_top")
+
+[node name="Bottom" type="CollisionShape3D" parent="BoardBounds" unique_id=2047148109]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.5, 2)
+shape = SubResource("BoxShape3D_bound_top")
+
+[node name="Floor" parent="." unique_id=213839994 instance=ExtResource("1_block")]
+transform = Transform3D(19, 0, 0, 0, 1, 0, 0, 0, 5, 0, -0.5, 2)
+
+[node name="WallLeft" parent="." unique_id=534140493 instance=ExtResource("1_block")]
+transform = Transform3D(1, 0, 0, 0, 2, 0, 0, 0, 5, -9, 1, 2)
+
+[node name="Pillar" parent="." unique_id=858103656 instance=ExtResource("1_block")]
+transform = Transform3D(1, 0, 0, 0, 9, 0, 0, 0, 1, 0, 4.5, 0.5)
+
+[node name="FrontRail" parent="." unique_id=1950132145 instance=ExtResource("9_view")]
+transform = Transform3D(15, 0, 0, 0, 1, 0, 0, 0, 0.5, -1, 0.5, 4.25)
+solid_view = 2
+
+[node name="LedgeWallLeft" parent="." unique_id=1780791852 instance=ExtResource("1_block")]
+transform = Transform3D(1, 0, 0, 0, 3, 0, 0, 0, 1, 2, 4.5, 0.5)
+
+[node name="GlassLeft" parent="." unique_id=979128262 instance=ExtResource("9_view")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 4.5, 0.5)
+
+[node name="GlassFloor" parent="." unique_id=1700209455 instance=ExtResource("9_view")]
+transform = Transform3D(2, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 3.5, 0.5)
+
+[node name="GlassRight" parent="." unique_id=525706069 instance=ExtResource("9_view")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 4.5, 0.5)
+
+[node name="LedgeWallRight" parent="." unique_id=2125931366 instance=ExtResource("1_block")]
+transform = Transform3D(1, 0, 0, 0, 2, 0, 0, 0, 1, 7, 5, 0.5)
+
+[node name="Plate" parent="." unique_id=1420385076 instance=ExtResource("10_plate")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 4, 0.5)
+target = NodePath("../Door")
+stays_pressed = false
+
+[node name="RoomCeiling" parent="." unique_id=1193547720 instance=ExtResource("1_block")]
+transform = Transform3D(3, 0, 0, 0, 1, 0, 0, 0, 5, 8, 3.5, 2)
+
+[node name="Door" parent="." unique_id=67281914 instance=ExtResource("11_door")]
+transform = Transform3D(1, 0, 0, 0, 3, 0, 0, 0, 5, 7, 1.5, 2)
+stays_open = false
+
+[node name="Robot" parent="." unique_id=2008694613 instance=ExtResource("7_robot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.5, 0.5)
+starts_on = false
+starts_forward = true
+move_speed = 2.0
+
+[node name="Exit" parent="." unique_id=2075183461 instance=ExtResource("5_exit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 2, 8.5, 0.5, 0.5)
+goal_view = 0
+
+[node name="Player" parent="." unique_id=1786487272 instance=ExtResource("6_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.5, 2)
+move_speed = 6.0
+ground_acceleration = 70.0
+ground_deceleration = 90.0
+air_acceleration = 40.0
+jump_speed = 9.0
+rise_gravity = 25.0
+fall_gravity = 45.0
+max_fall_speed = 22.0
+jump_cut = 0.45
+coyote_time = 0.1
+jump_buffer_time = 0.12
+fall_limit = -12.0
+push_speed = 3.5
+
+[node name="Light" type="DirectionalLight3D" parent="." unique_id=1223949786]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 10, 0)

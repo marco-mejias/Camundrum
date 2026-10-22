@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="Material_block"]
+albedo_color = Color(0.66, 0.68, 0.73, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_block"]
+material = SubResource("Material_block")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_block"]
+
+[node name="Block" type="StaticBody3D" groups=["depth"]]
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_block")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_block")

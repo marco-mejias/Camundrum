@@ -1,0 +1,134 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/elements/block.tscn" id="1_block"]
+[ext_resource type="PackedScene" path="res://scenes/elements/crate.tscn" id="2_crate"]
+[ext_resource type="PackedScene" path="res://scenes/elements/crate_tall2.tscn" id="7_crate2"]
+[ext_resource type="PackedScene" path="res://scenes/elements/crate_tall3.tscn" id="8_crate3"]
+[ext_resource type="PackedScene" path="res://scenes/elements/board_hole.tscn" id="3_hole"]
+[ext_resource type="PackedScene" path="res://scenes/elements/exit.tscn" id="5_exit"]
+[ext_resource type="PackedScene" uid="uid://d0cklo3chni14" path="res://scenes/player.tscn" id="6_player"]
+
+[sub_resource type="StandardMaterial3D" id="Material_board"]
+albedo_color = Color(0.17, 0.27, 0.52, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_board"]
+material = SubResource("Material_board")
+size = Vector3(13, 7, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_board"]
+size = Vector3(13, 7, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bound_side"]
+size = Vector3(1, 9, 11)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bound_top"]
+size = Vector3(15, 1, 11)
+
+[node name="CrateStairs" type="Node3D"]
+metadata/flat_front_z = 8.5
+
+[node name="Board" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -0.75)
+
+[node name="Mesh" type="MeshInstance3D" parent="Board"]
+mesh = SubResource("BoxMesh_board")
+
+[node name="Collision" type="CollisionShape3D" parent="Board"]
+shape = SubResource("BoxShape3D_board")
+
+[node name="BoardBounds" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Left" type="CollisionShape3D" parent="BoardBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 2.5, 4)
+shape = SubResource("BoxShape3D_bound_side")
+
+[node name="Right" type="CollisionShape3D" parent="BoardBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 2.5, 4)
+shape = SubResource("BoxShape3D_bound_side")
+
+[node name="Top" type="CollisionShape3D" parent="BoardBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 4)
+shape = SubResource("BoxShape3D_bound_top")
+
+[node name="Floor" parent="." instance=ExtResource("1_block")]
+transform = Transform3D(13, 0, 0, 0, 1, 0, 0, 0, 9, 0, -0.5, 4)
+
+[node name="Ledge" parent="." instance=ExtResource("1_block")]
+transform = Transform3D(2, 0, 0, 0, 1, 0, 0, 0, 2, 5.5, 3.5, 0.5)
+
+[node name="Exit" parent="." instance=ExtResource("5_exit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 4.5, 1)
+
+[node name="Void00" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 2.5, -0.5)
+
+[node name="Void01" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 3.5, -0.5)
+
+[node name="Void02" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 4.5, -0.5)
+
+[node name="Void03" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 5.5, -0.5)
+
+[node name="Void04" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2.5, -0.5)
+
+[node name="Void05" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 3.5, -0.5)
+
+[node name="Void06" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 4.5, -0.5)
+
+[node name="Void07" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 5.5, -0.5)
+
+[node name="Void08" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 2.5, -0.5)
+
+[node name="Void09" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 3.5, -0.5)
+
+[node name="Void10" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 4.5, -0.5)
+
+[node name="Void11" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 5.5, -0.5)
+
+[node name="Void12" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2.5, -0.5)
+
+[node name="Void13" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 3.5, -0.5)
+
+[node name="Void14" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 4.5, -0.5)
+
+[node name="Void15" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 5.5, -0.5)
+
+[node name="Void16" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 4.5, -0.5)
+
+[node name="Void17" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 5.5, -0.5)
+
+[node name="Void18" parent="." instance=ExtResource("3_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 5.5, -0.5)
+
+[node name="Crate3" parent="." instance=ExtResource("8_crate3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 1.48, 3)
+
+[node name="Crate2" parent="." instance=ExtResource("7_crate2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.98, 2)
+
+[node name="Crate1" parent="." instance=ExtResource("2_crate")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.48, 3.5)
+
+[node name="Player" parent="." instance=ExtResource("6_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0.5, 1)
+
+[node name="Light" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 10, 0)

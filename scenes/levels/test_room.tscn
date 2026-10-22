@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://dqfrtojg5moid"]
+
+[ext_resource type="PackedScene" uid="uid://d0cklo3chni14" path="res://scenes/player.tscn" id="1_player"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(24, 1, 5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(24, 1, 5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_platform"]
+size = Vector3(3, 1, 2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_platform"]
+size = Vector3(3, 1, 2)
+
+[node name="TestRoom" type="Node3D" unique_id=412444589]
+
+[node name="Floor" type="StaticBody3D" parent="." unique_id=913505893]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 2)
+
+[node name="Mesh" type="MeshInstance3D" parent="Floor" unique_id=684074180]
+mesh = SubResource("BoxMesh_floor")
+
+[node name="Collision" type="CollisionShape3D" parent="Floor" unique_id=1859165770]
+shape = SubResource("BoxShape3D_floor")
+
+[node name="Platform" type="StaticBody3D" parent="." unique_id=1630681181]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 2, 0.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="Platform" unique_id=1888532381]
+mesh = SubResource("BoxMesh_platform")
+
+[node name="Collision" type="CollisionShape3D" parent="Platform" unique_id=1713324005]
+shape = SubResource("BoxShape3D_platform")
+
+[node name="Player" parent="." unique_id=44682261 instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="Light" type="DirectionalLight3D" parent="." unique_id=911841113]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 10, 0)

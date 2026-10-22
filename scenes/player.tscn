@@ -1,0 +1,84 @@
+[gd_scene format=3 uid="uid://d0cklo3chni14"]
+
+[ext_resource type="Script" uid="uid://bva6trqtfa5hp" path="res://scripts/PlayerController.cpp" id="1_pc"]
+[ext_resource type="Shader" path="res://shaders/xray_dots.gdshader" id="2_xray"]
+
+[sub_resource type="StandardMaterial3D" id="Material_player"]
+albedo_color = Color(1, 0.48, 0.06, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_player"]
+material = SubResource("Material_player")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_player"]
+
+[sub_resource type="StandardMaterial3D" id="Material_shadow"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0, 0, 0, 0.45)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_shadow"]
+material = SubResource("Material_shadow")
+top_radius = 0.45
+bottom_radius = 0.45
+height = 0.01
+radial_segments = 20
+rings = 1
+
+[sub_resource type="StandardMaterial3D" id="Material_dust"]
+shading_mode = 0
+albedo_color = Color(0.86, 0.84, 0.78, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_dust"]
+material = SubResource("Material_dust")
+
+[sub_resource type="Curve" id="Curve_shrink"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="ShaderMaterial" id="Material_xray"]
+render_priority = 10
+shader = ExtResource("2_xray")
+shader_parameter/tint = Color(1, 0.62, 0.22, 0.95)
+shader_parameter/spacing = 7.0
+shader_parameter/dot_radius = 1.9
+shader_parameter/hidden_margin = 0.0008
+
+[node name="Player" type="CharacterBody3D" unique_id=1278754872 groups=["depth", "player"]]
+collision_layer = 5
+script = ExtResource("1_pc")
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=1494684455]
+mesh = SubResource("BoxMesh_player")
+
+[node name="XRay" type="MeshInstance3D" parent="Mesh"]
+cast_shadow = 0
+mesh = SubResource("BoxMesh_player")
+surface_material_override/0 = SubResource("Material_xray")
+
+[node name="Collision" type="CollisionShape3D" parent="." unique_id=2134189422]
+shape = SubResource("BoxShape3D_player")
+
+[node name="Shadow" type="MeshInstance3D" parent="."]
+top_level = true
+visible = false
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_shadow")
+
+[node name="Dust" type="CPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.45, 0)
+emitting = false
+amount = 10
+lifetime = 0.4
+one_shot = true
+explosiveness = 0.95
+mesh = SubResource("BoxMesh_dust")
+emission_shape = 3
+emission_box_extents = Vector3(0.4, 0.02, 0.4)
+direction = Vector3(0, 1, 0)
+spread = 80.0
+gravity = Vector3(0, -3, 0)
+initial_velocity_min = 1.0
+initial_velocity_max = 2.2
+scale_amount_min = 0.08
+scale_amount_max = 0.16
+scale_amount_curve = SubResource("Curve_shrink")

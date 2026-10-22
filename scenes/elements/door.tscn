@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/Door.cpp" id="1_door"]
+
+[sub_resource type="StandardMaterial3D" id="Material_door"]
+albedo_color = Color(0.58, 0.3, 0.86, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_door"]
+material = SubResource("Material_door")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_door"]
+
+[node name="Door" type="StaticBody3D" groups=["depth"]]
+script = ExtResource("1_door")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_door")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_door")

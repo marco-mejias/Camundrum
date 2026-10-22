@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/ViewBlock.cpp" id="1_view"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_view"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_view"]
+
+[node name="ViewBlock" type="StaticBody3D" groups=["depth"]]
+script = ExtResource("1_view")
+solid_view = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_view")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_view")

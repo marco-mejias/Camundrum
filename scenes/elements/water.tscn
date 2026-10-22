@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/Water.cpp" id="1_water"]
+[ext_resource type="Shader" path="res://shaders/water_flow.gdshader" id="2_flow"]
+
+[sub_resource type="ShaderMaterial" id="Material_water"]
+shader = ExtResource("2_flow")
+
+[sub_resource type="BoxMesh" id="BoxMesh_water"]
+material = SubResource("Material_water")
+size = Vector3(1, 0.08, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_water"]
+
+[node name="Water" type="Area3D" groups=["depth"]]
+collision_layer = 0
+collision_mask = 4
+script = ExtResource("1_water")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.46, 0)
+mesh = SubResource("BoxMesh_water")
+
+[node name="Trigger" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_water")

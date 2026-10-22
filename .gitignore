@@ -1,0 +1,11 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Jenova: build output and downloaded packages (reinstalled from Jenova's Package Manager)
+/Jenova/Packages/
+*.pdb
+
+# Local tool settings, they hold paths of this computer
+.mcp.json
+.claude/

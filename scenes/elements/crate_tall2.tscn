@@ -1,0 +1,42 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/Crate.cpp" id="1_crate"]
+
+[sub_resource type="StandardMaterial3D" id="Material_crate"]
+albedo_color = Color(0.6, 0.38, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_crate"]
+material = SubResource("Material_crate")
+size = Vector3(0.96, 1.96, 0.96)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_crate"]
+size = Vector3(0.96, 1.96, 0.96)
+
+[sub_resource type="StandardMaterial3D" id="Material_shadow"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0, 0, 0, 0.45)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_shadow"]
+material = SubResource("Material_shadow")
+top_radius = 0.45
+bottom_radius = 0.45
+height = 0.01
+radial_segments = 20
+rings = 1
+
+[node name="Crate2" type="CharacterBody3D" groups=["crate", "depth", "pushable"]]
+collision_layer = 5
+script = ExtResource("1_crate")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_crate")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_crate")
+
+[node name="Shadow" type="MeshInstance3D" parent="."]
+top_level = true
+visible = false
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_shadow")

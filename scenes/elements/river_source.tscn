@@ -1,0 +1,62 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/RiverSource.cpp" id="1_source"]
+
+[sub_resource type="StandardMaterial3D" id="Material_spring"]
+albedo_color = Color(0.55, 0.78, 1, 1)
+emission_enabled = true
+emission = Color(0.3, 0.6, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_spring"]
+material = SubResource("Material_spring")
+size = Vector3(1, 0.3, 0.08)
+
+[sub_resource type="StandardMaterial3D" id="Material_foam"]
+shading_mode = 0
+albedo_color = Color(0.85, 0.94, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_foam"]
+material = SubResource("Material_foam")
+
+[sub_resource type="Curve" id="Curve_foam"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[node name="RiverSource" type="Node3D" groups=["swap_fixed"]]
+script = ExtResource("1_source")
+
+[node name="Spring" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0.04)
+mesh = SubResource("BoxMesh_spring")
+
+[node name="FootSplash" type="CPUParticles3D" parent="."]
+emitting = false
+amount = 26
+lifetime = 0.45
+mesh = SubResource("BoxMesh_foam")
+emission_shape = 3
+emission_box_extents = Vector3(0.4, 0.02, 0.15)
+direction = Vector3(0, 1, 0)
+spread = 55.0
+gravity = Vector3(0, -12, 0)
+initial_velocity_min = 1.8
+initial_velocity_max = 3.2
+scale_amount_min = 0.1
+scale_amount_max = 0.2
+scale_amount_curve = SubResource("Curve_foam")
+
+[node name="FallSplash" type="CPUParticles3D" parent="."]
+emitting = false
+amount = 26
+lifetime = 0.45
+mesh = SubResource("BoxMesh_foam")
+emission_shape = 3
+emission_box_extents = Vector3(0.4, 0.02, 0.15)
+direction = Vector3(0, 1, 0)
+spread = 55.0
+gravity = Vector3(0, -12, 0)
+initial_velocity_min = 1.8
+initial_velocity_max = 3.2
+scale_amount_min = 0.1
+scale_amount_max = 0.2
+scale_amount_curve = SubResource("Curve_foam")

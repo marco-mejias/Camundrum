@@ -1,0 +1,87 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/Exit.cpp" id="1_exit"]
+
+[sub_resource type="StandardMaterial3D" id="Material_pole"]
+albedo_color = Color(0.85, 0.86, 0.9, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pole"]
+material = SubResource("Material_pole")
+top_radius = 0.04
+bottom_radius = 0.04
+height = 1.5
+radial_segments = 10
+rings = 1
+
+[sub_resource type="BoxMesh" id="BoxMesh_cloth"]
+size = Vector3(0.6, 0.4, 0.04)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_base"]
+material = SubResource("Material_pole")
+top_radius = 0.22
+bottom_radius = 0.26
+height = 0.08
+radial_segments = 16
+rings = 1
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_exit"]
+size = Vector3(0.5, 0.6, 0.9)
+
+[sub_resource type="StandardMaterial3D" id="Material_spark"]
+shading_mode = 0
+vertex_color_use_as_albedo = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_spark"]
+material = SubResource("Material_spark")
+
+[sub_resource type="Curve" id="Curve_spark"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Gradient" id="Gradient_spark"]
+offsets = PackedFloat32Array(0, 0.5, 1)
+colors = PackedColorArray(1, 1, 0.7, 1, 0.45, 1, 0.8, 1, 0.3, 0.7, 1, 1)
+
+[node name="Exit" type="Area3D" groups=["depth"]]
+collision_layer = 0
+collision_mask = 4
+script = ExtResource("1_exit")
+
+[node name="Flag" type="Node3D" parent="."]
+
+[node name="Base" type="MeshInstance3D" parent="Flag"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.46, 0)
+mesh = SubResource("CylinderMesh_base")
+
+[node name="Pole" type="MeshInstance3D" parent="Flag"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+mesh = SubResource("CylinderMesh_pole")
+
+[node name="ClothPivot" type="Node3D" parent="Flag"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+
+[node name="Cloth" type="MeshInstance3D" parent="Flag/ClothPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0, 0)
+mesh = SubResource("BoxMesh_cloth")
+
+[node name="Trigger" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_exit")
+
+[node name="Burst" type="CPUParticles3D" parent="."]
+emitting = false
+amount = 40
+lifetime = 0.8
+one_shot = true
+explosiveness = 1.0
+mesh = SubResource("BoxMesh_spark")
+direction = Vector3(0, 1, 0)
+spread = 180.0
+gravity = Vector3(0, -7, 0)
+initial_velocity_min = 3.0
+initial_velocity_max = 5.5
+angular_velocity_min = -360.0
+angular_velocity_max = 360.0
+scale_amount_min = 0.16
+scale_amount_max = 0.28
+scale_amount_curve = SubResource("Curve_spark")
+color_initial_ramp = SubResource("Gradient_spark")

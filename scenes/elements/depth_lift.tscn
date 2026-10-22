@@ -1,0 +1,119 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/DepthLift.cpp" id="1_lift"]
+
+[sub_resource type="StandardMaterial3D" id="Material_lift"]
+albedo_color = Color(0.36, 0.4, 0.5, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_lift"]
+material = SubResource("Material_lift")
+size = Vector3(2, 0.5, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_stripe"]
+albedo_color = Color(0.95, 0.75, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_stripe"]
+material = SubResource("Material_stripe")
+size = Vector3(2.02, 0.06, 1.02)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_lift"]
+size = Vector3(2, 0.5, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_deck"]
+size = Vector3(1.9, 1.4, 0.9)
+
+[sub_resource type="StandardMaterial3D" id="Material_panel"]
+albedo_color = Color(0.05, 0.05, 0.07, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_panel"]
+material = SubResource("Material_panel")
+size = Vector3(0.3, 0.44, 0.02)
+
+[sub_resource type="StandardMaterial3D" id="Material_lit"]
+shading_mode = 0
+albedo_color = Color(1, 0.35, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_dim"]
+shading_mode = 0
+albedo_color = Color(0.2, 0.07, 0.06, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_flat"]
+size = Vector3(0.14, 0.03, 0.02)
+
+[sub_resource type="BoxMesh" id="BoxMesh_upright"]
+size = Vector3(0.03, 0.15, 0.02)
+
+[node name="DepthLift" type="StaticBody3D" groups=["depth", "depth_lift"]]
+script = ExtResource("1_lift")
+stop_count = 2
+stop_step = 1.0
+shift_time = 0.6
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_lift")
+
+[node name="Stripe" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+mesh = SubResource("BoxMesh_stripe")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_lift")
+
+[node name="Deck" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 4
+
+[node name="Collision" type="CollisionShape3D" parent="Deck"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+shape = SubResource("BoxShape3D_deck")
+
+[node name="Display" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.02, 0.51)
+
+[node name="Panel" type="MeshInstance3D" parent="Display"]
+mesh = SubResource("BoxMesh_panel")
+
+[node name="LitLook" type="MeshInstance3D" parent="Display"]
+visible = false
+mesh = SubResource("BoxMesh_flat")
+surface_material_override/0 = SubResource("Material_lit")
+
+[node name="DimLook" type="MeshInstance3D" parent="Display"]
+visible = false
+mesh = SubResource("BoxMesh_flat")
+surface_material_override/0 = SubResource("Material_dim")
+
+[node name="a" type="MeshInstance3D" parent="Display"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 0.180, 0.015)
+mesh = SubResource("BoxMesh_flat")
+surface_material_override/0 = SubResource("Material_dim")
+
+[node name="b" type="MeshInstance3D" parent="Display"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.090, 0.090, 0.015)
+mesh = SubResource("BoxMesh_upright")
+surface_material_override/0 = SubResource("Material_dim")
+
+[node name="c" type="MeshInstance3D" parent="Display"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.090, -0.090, 0.015)
+mesh = SubResource("BoxMesh_upright")
+surface_material_override/0 = SubResource("Material_dim")
+
+[node name="d" type="MeshInstance3D" parent="Display"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, -0.180, 0.015)
+mesh = SubResource("BoxMesh_flat")
+surface_material_override/0 = SubResource("Material_dim")
+
+[node name="e" type="MeshInstance3D" parent="Display"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.090, -0.090, 0.015)
+mesh = SubResource("BoxMesh_upright")
+surface_material_override/0 = SubResource("Material_dim")
+
+[node name="f" type="MeshInstance3D" parent="Display"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.090, 0.090, 0.015)
+mesh = SubResource("BoxMesh_upright")
+surface_material_override/0 = SubResource("Material_dim")
+
+[node name="g" type="MeshInstance3D" parent="Display"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000, 0.000, 0.015)
+mesh = SubResource("BoxMesh_flat")
+surface_material_override/0 = SubResource("Material_dim")

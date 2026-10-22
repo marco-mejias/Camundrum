@@ -1,0 +1,66 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/BoardHole.cpp" id="1_hole"]
+
+[sub_resource type="StandardMaterial3D" id="Material_rim"]
+albedo_color = Color(0.5, 0.56, 0.68, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_rim"]
+material = SubResource("Material_rim")
+size = Vector3(1, 1, 0.03)
+
+[sub_resource type="StandardMaterial3D" id="Material_marker"]
+albedo_color = Color(0.02, 0.02, 0.04, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_marker"]
+material = SubResource("Material_marker")
+size = Vector3(0.8, 0.8, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="Material_pit"]
+shading_mode = 0
+albedo_color = Color(0.02, 0.02, 0.035, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_pit"]
+material = SubResource("Material_pit")
+size = Vector3(1, 1, 0.05)
+
+[sub_resource type="StandardMaterial3D" id="Material_inner_wall"]
+albedo_color = Color(0.13, 0.16, 0.24, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_inner_wall"]
+material = SubResource("Material_inner_wall")
+size = Vector3(1, 0.2, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="Material_filled"]
+albedo_color = Color(0.55, 0.38, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_filled"]
+material = SubResource("Material_filled")
+size = Vector3(0.98, 0.98, 0.5)
+
+[node name="BoardHole" type="Node3D" groups=["board_hole", "swap_fixed"]]
+script = ExtResource("1_hole")
+
+[node name="Rim" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.015)
+mesh = SubResource("BoxMesh_rim")
+
+[node name="Marker" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.025)
+mesh = SubResource("BoxMesh_marker")
+
+[node name="Pit" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.53)
+visible = false
+cast_shadow = 0
+mesh = SubResource("BoxMesh_pit")
+
+[node name="InnerWall" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, -0.25)
+visible = false
+mesh = SubResource("BoxMesh_inner_wall")
+
+[node name="Filled" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.25)
+visible = false
+mesh = SubResource("BoxMesh_filled")

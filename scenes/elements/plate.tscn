@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/PressurePlate.cpp" id="1_plate"]
+
+[sub_resource type="StandardMaterial3D" id="Material_plate"]
+albedo_color = Color(0.9, 0.78, 0.25, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_plate"]
+material = SubResource("Material_plate")
+size = Vector3(0.9, 0.1, 0.9)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_plate"]
+size = Vector3(0.7, 0.4, 0.9)
+
+[node name="Plate" type="Area3D" groups=["depth"]]
+collision_layer = 0
+collision_mask = 4
+script = ExtResource("1_plate")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+mesh = SubResource("BoxMesh_plate")
+
+[node name="Trigger" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+shape = SubResource("BoxShape3D_plate")

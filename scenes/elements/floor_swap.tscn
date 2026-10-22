@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/elements/FloorSwap.cpp" id="1_swap"]
+
+[sub_resource type="StandardMaterial3D" id="Material_hinge"]
+albedo_color = Color(0.7, 0.45, 1, 1)
+emission_enabled = true
+emission = Color(0.55, 0.3, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_hinge"]
+material = SubResource("Material_hinge")
+size = Vector3(1, 0.1, 0.1)
+
+[node name="FloorSwap" type="Node3D" groups=["floor_swap"]]
+script = ExtResource("1_swap")
+
+[node name="Hinge" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_hinge")

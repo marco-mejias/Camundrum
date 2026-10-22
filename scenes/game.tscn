@@ -1,0 +1,352 @@
+[gd_scene format=3 uid="uid://b6yd88gtj00qk"]
+
+[ext_resource type="Script" uid="uid://d1626pkv4ef06" path="res://scripts/GameManager.cpp" id="1_gm"]
+[ext_resource type="Script" uid="uid://c6qn7uctprqgp" path="res://scripts/InputController.cpp" id="2_in"]
+[ext_resource type="Script" uid="uid://brxjsxiy4n6yv" path="res://scripts/CameraController.cpp" id="3_cam"]
+[ext_resource type="PackedScene" path="res://scenes/levels/around_up_drop.tscn" id="4_lvl"]
+[ext_resource type="Script" uid="uid://yrpo3h32ummf" path="res://scripts/DepthController.cpp" id="5_depth"]
+[ext_resource type="Script" uid="uid://d0xte43qt403p" path="res://scripts/UIController.cpp" id="6_ui"]
+[ext_resource type="Script" uid="uid://cx8ujsvm0usl8" path="res://scripts/AudioController.cpp" id="7_audio"]
+[ext_resource type="Script" uid="uid://cmljdxagoy0q2" path="res://scripts/LevelController.cpp" id="8_levels"]
+[ext_resource type="Script" path="res://scripts/BackgroundController.cpp" id="9_background"]
+
+[sub_resource type="Environment" id="Environment_game"]
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 0.22
+glow_enabled = true
+glow_intensity = 1.6
+glow_strength = 1.0
+glow_bloom = 0.0
+glow_blend_mode = 0
+glow_hdr_threshold = 1.0
+adjustment_enabled = true
+adjustment_brightness = 0.98
+adjustment_contrast = 0.825
+adjustment_saturation = 0.96
+
+[sub_resource type="StyleBoxFlat" id="Style_button_disabled"]
+content_margin_left = 28.0
+content_margin_top = 10.0
+content_margin_right = 28.0
+content_margin_bottom = 10.0
+bg_color = Color(0.14, 0.15, 0.2, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="Style_button_focus"]
+draw_center = false
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.55, 0.68, 1, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="Style_button_hover"]
+content_margin_left = 28.0
+content_margin_top = 10.0
+content_margin_right = 28.0
+content_margin_bottom = 10.0
+bg_color = Color(0.3, 0.37, 0.52, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="Style_button"]
+content_margin_left = 28.0
+content_margin_top = 10.0
+content_margin_right = 28.0
+content_margin_bottom = 10.0
+bg_color = Color(0.2, 0.24, 0.34, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="Style_button_pressed"]
+content_margin_left = 28.0
+content_margin_top = 10.0
+content_margin_right = 28.0
+content_margin_bottom = 10.0
+bg_color = Color(0.42, 0.62, 0.95, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="Theme" id="Theme_menus"]
+Button/colors/font_color = Color(0.92, 0.94, 1, 1)
+Button/colors/font_disabled_color = Color(0.45, 0.47, 0.55, 1)
+Button/font_sizes/font_size = 26
+Button/styles/disabled = SubResource("Style_button_disabled")
+Button/styles/focus = SubResource("Style_button_focus")
+Button/styles/hover = SubResource("Style_button_hover")
+Button/styles/normal = SubResource("Style_button")
+Button/styles/pressed = SubResource("Style_button_pressed")
+Label/colors/font_color = Color(0.92, 0.94, 1, 1)
+Label/font_sizes/font_size = 24
+
+[node name="Game" type="Node" unique_id=1171487440]
+script = ExtResource("1_gm")
+starting_view = 0
+level_number = -1
+death_time = 0.45
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1779135708]
+environment = SubResource("Environment_game")
+
+[node name="Background" type="Node3D" parent="."]
+script = ExtResource("9_background")
+
+[node name="InputController" type="Node" parent="." unique_id=1211323316]
+process_physics_priority = -10
+script = ExtResource("2_in")
+
+[node name="CameraController" type="Node3D" parent="." unique_id=1171855332]
+script = ExtResource("3_cam")
+transition_time = 0.35
+frame_margin = 1.15
+side_background = Color(0.41747698, 0.54066825, 0.8953105, 1)
+top_background = Color(0.9411765, 0.38039216, 0, 0.6431373)
+iso_background = Color(0.11156229, 0.5794192, 0.49975038, 1)
+
+[node name="Camera" type="Camera3D" parent="CameraController" unique_id=282643001]
+transform = Transform3D(1, 0, 0, 0, 0.990268, 0.139173, 0, -0.139173, 0.990268, 0, 7.17519, 31.708)
+projection = 1
+current = true
+size = 15.0
+far = 200.0
+
+[node name="SidePose" type="Camera3D" parent="CameraController" unique_id=1574606945]
+transform = Transform3D(1, 0, 0, 0, 0.99026793, 0.139173, 0, -0.139173, 0.99026793, 0, 7.17519, 31.708)
+projection = 1
+size = 15.0
+far = 200.0
+
+[node name="TopPose" type="Camera3D" parent="CameraController" unique_id=1840530017]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 32)
+projection = 1
+size = 15.0
+far = 200.0
+
+[node name="IsoPose" type="Camera3D" parent="CameraController" unique_id=899120943]
+transform = Transform3D(0.7986353, 0.30090734, -0.52118695, 0, 0.866025, 0.49999988, 0.6018148, -0.3993176, 0.69163847, -14.9, 16, 20)
+projection = 1
+size = 20.0
+far = 200.0
+
+[node name="DepthController" type="Node" parent="." unique_id=2041049486]
+script = ExtResource("5_depth")
+flat_front_z = 4.5
+transition_time = 0.35
+
+[node name="AudioController" type="Node" parent="." unique_id=507873434]
+script = ExtResource("7_audio")
+sound_volume = 0.0
+
+[node name="LevelController" type="Node" parent="." unique_id=63444286]
+script = ExtResource("8_levels")
+
+[node name="Level" parent="." unique_id=1687796860 instance=ExtResource("4_lvl")]
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=715957015]
+script = ExtResource("6_ui")
+
+[node name="CompleteLabel" type="Label" parent="UI" unique_id=689174880]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 36
+text = "Level complete!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ViewBar" type="HBoxContainer" parent="UI" unique_id=1169305993]
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 420.0
+offset_bottom = 56.0
+theme_override_constants/separation = 22
+
+[node name="Side" type="Label" parent="UI/ViewBar" unique_id=243336272]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "1 SIDE"
+
+[node name="Top" type="Label" parent="UI/ViewBar" unique_id=394855362]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "2 TOP"
+
+[node name="Iso" type="Label" parent="UI/ViewBar" unique_id=17743575]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "3 ISO"
+
+[node name="Keys" type="Label" parent="UI" unique_id=934968443]
+modulate = Color(1, 1, 1, 0.55)
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -44.0
+offset_right = 520.0
+offset_bottom = -16.0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 16
+text = "E use    R restart    Esc pause"
+
+[node name="Menus" type="Control" parent="UI" unique_id=1066441426]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = SubResource("Theme_menus")
+
+[node name="MainMenu" type="ColorRect" parent="UI/Menus" unique_id=1171270341]
+visible = false
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.11, 0.16, 1)
+
+[node name="Center" type="CenterContainer" parent="UI/Menus/MainMenu" unique_id=1741805479]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Box" type="VBoxContainer" parent="UI/Menus/MainMenu/Center" unique_id=837477907]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="UI/Menus/MainMenu/Center/Box" unique_id=1567345544]
+layout_mode = 2
+theme_override_font_sizes/font_size = 64
+text = "CAMUNDRUM"
+horizontal_alignment = 1
+
+[node name="Message" type="Label" parent="UI/Menus/MainMenu/Center/Box" unique_id=1576385]
+visible = false
+modulate = Color(0.55, 1, 0.75, 1)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+
+[node name="Play" type="Button" parent="UI/Menus/MainMenu/Center/Box" unique_id=1901820212]
+layout_mode = 2
+text = "Play"
+
+[node name="Select" type="Button" parent="UI/Menus/MainMenu/Center/Box" unique_id=1671036194]
+layout_mode = 2
+text = "Select level"
+
+[node name="Quit" type="Button" parent="UI/Menus/MainMenu/Center/Box" unique_id=1877811685]
+layout_mode = 2
+text = "Quit"
+
+[node name="LevelSelect" type="ColorRect" parent="UI/Menus" unique_id=2004220070]
+visible = false
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.11, 0.16, 1)
+
+[node name="Center" type="CenterContainer" parent="UI/Menus/LevelSelect" unique_id=380706267]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Box" type="VBoxContainer" parent="UI/Menus/LevelSelect/Center" unique_id=1884241863]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="UI/Menus/LevelSelect/Center/Box" unique_id=341438550]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "Select level"
+horizontal_alignment = 1
+
+[node name="Grid" type="GridContainer" parent="UI/Menus/LevelSelect/Center/Box" unique_id=1479357952]
+layout_mode = 2
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 14
+columns = 5
+
+[node name="Back" type="Button" parent="UI/Menus/LevelSelect/Center/Box" unique_id=1048812540]
+layout_mode = 2
+text = "Back"
+
+[node name="PauseMenu" type="ColorRect" parent="UI/Menus" unique_id=2000993653]
+visible = false
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.06, 0.09, 0.75)
+
+[node name="Center" type="CenterContainer" parent="UI/Menus/PauseMenu" unique_id=267152564]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Box" type="VBoxContainer" parent="UI/Menus/PauseMenu/Center" unique_id=534211618]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="UI/Menus/PauseMenu/Center/Box" unique_id=1253349903]
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "Paused"
+horizontal_alignment = 1
+
+[node name="Resume" type="Button" parent="UI/Menus/PauseMenu/Center/Box" unique_id=1167115810]
+layout_mode = 2
+text = "Resume"
+
+[node name="Restart" type="Button" parent="UI/Menus/PauseMenu/Center/Box" unique_id=320982546]
+layout_mode = 2
+text = "Restart"
+
+[node name="Select" type="Button" parent="UI/Menus/PauseMenu/Center/Box" unique_id=2099146896]
+layout_mode = 2
+text = "Select level"
+
+[node name="Menu" type="Button" parent="UI/Menus/PauseMenu/Center/Box" unique_id=1053762837]
+layout_mode = 2
+text = "Main menu"
+
+[node name="Fade" type="ColorRect" parent="UI" unique_id=1881094049]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
