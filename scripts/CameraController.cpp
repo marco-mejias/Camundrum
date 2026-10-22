@@ -119,6 +119,7 @@ double shake_clock = 0.0;
 Transform3D authored_poses[VIEW_COUNT];
 double authored_sizes[VIEW_COUNT] = { 1.0, 1.0, 1.0 };
 double margin_copy = 1.15;
+double shake_scale = 1.0;
 uint64_t light_id = 0;
 Basis light_rest;
 
@@ -245,12 +246,19 @@ void TransitionTo(int view)
 	// Restart the move, the per-frame routine carries it out
 	progress = 0.0;
 }
+void SetShakeScale(double amount)
+{
+	// Purpose: let the GameManager apply the player's screen shake setting, 0 is none and 1 is full.
+
+	// Keep it for every shake from now on
+	shake_scale = amount < 0.0 ? 0.0 : amount;
+}
 void Shake(double strength, double seconds)
 {
 	// Purpose: let the GameManager shake the camera for a moment, used when the player dies.
 
-	// Start a shake that fades out over the given time
-	shake_strength = strength;
+	// Start a shake that fades out over the given time, as strong as the player's setting allows
+	shake_strength = strength * shake_scale;
 	shake_length = seconds;
 	shake_left = seconds;
 	shake_clock = 0.0;

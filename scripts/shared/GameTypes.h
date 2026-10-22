@@ -44,7 +44,10 @@ enum SoundId
 	SOUND_DEATH = 9,
 	SOUND_EXIT = 10,
 	SOUND_CRATE_LAND = 11,
-	SOUND_COUNT = 12
+	SOUND_UI_MOVE = 12,
+	SOUND_UI_CONFIRM = 13,
+	SOUND_UI_BACK = 14,
+	SOUND_COUNT = 15
 };
 
 // The colour of each view, shared by the view bar, view blocks and view flags

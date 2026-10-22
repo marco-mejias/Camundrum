@@ -176,6 +176,11 @@ The module design is in [ARCHITECTURE.md](ARCHITECTURE.md).
 | Queued view switch and background colour per view | working |
 | Reusable block, pressure plate, door and exit | working |
 | First level playable from start to exit | working |
+| Elements: crates (rows, tall), rivers, fans, holes, view blocks and flags, floor swap, depth lift, board plate, wall button, turntable, robot | working |
+| Six game levels, unlocked in order, with saved progress | working |
+| Top seen from above (turned pieces, light), neon pyramid background, colour per view | working |
+| Animated menus, options (volumes, screen shake, fullscreen) saved in `user://settings.cfg` | working |
+| View bar hop on a switch, level title card on start | working |
 
 **Decided**
 

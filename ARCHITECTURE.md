@@ -130,11 +130,28 @@ Loading frees the old level at once, before the new one is added, so the old scr
 
 | | |
 |---|---|
-| **Owns** | HUD (view indicator, key hint), the main menu, the level selector, the pause menu, the level-complete message, the fade |
-| **Receives** | `ShowView(view)`, `ShowComplete(shown)`, `FadeTo(alpha, seconds)`, `ShowMainMenu(level_count, finished_all)`, `ShowLevelSelect(level_count, open_count)`, `ShowPause(shown)`, `HideMenus()` |
-| **Emits** | `play_pressed`, `select_pressed`, `back_pressed`, `level_chosen(index)`, `resume_pressed`, `restart_pressed`, `menu_pressed`, `quit_pressed`, all deferred to the end of the frame |
+| **Owns** | HUD (view indicator, key hint), the level title card, the main menu, the level selector, the pause menu, the options screen, the level-complete message, the fade |
+| **Receives** | `ShowView(view)`, `ShowLevelTitle(text)`, `ShowComplete(shown)`, `FadeTo(alpha, seconds)`, `ShowMainMenu(level_count, finished_all)`, `ShowLevelSelect(level_count, open_count)`, `ShowPause(shown)`, `ShowOptions(master, effects, interface, shake, fullscreen)`, `HideMenus()` |
+| **Emits** | `play_pressed`, `select_pressed`, `back_pressed`, `level_chosen(index)`, `resume_pressed`, `restart_pressed`, `menu_pressed`, `quit_pressed`, `options_pressed`, `setting_changed(key, value)`, all deferred to the end of the frame |
 
-The menus are nodes under `UI/Menus` in `game.tscn`, with one flat theme; restyle them there. The selector's buttons are made in code, one per level.
+The menus are nodes under `UI/Menus` in `game.tscn`, with one flat theme (buttons, sliders, switches); restyle them there. The selector's buttons are made in code, one per level, finished ones marked with a tick.
+
+How the menus feel, all done with tweens in `UIController.cpp`:
+- **Opening a menu** (`ShowOnly`): its backdrop fades in and the pieces of its `Center/Box` come in one after another, fading and growing into place (`AnimateEntries`). The first button takes the focus, quietly.
+- **The title** is split into one label per letter at start (`BuildTitle`). The letters drop in on opening (`DropTitle`), then bob in a wave with colours drifting through the three views while the main menu shows (`WaveTitle`).
+- **Buttons and sliders**: the mouse over one gives it the focus, so mouse and keys share one highlight; the focused piece grows a little and ticks (`ConnectFeel`). Pressing sounds a confirm, going back a softer sound.
+- **Options** is reached from the main and the pause menu and goes back by itself to where it came from; only `options_pressed` (to get the values) and each `setting_changed` reach the GameManager. Sliders tick as they move; the Effects slider plays a game sound so its volume can be judged.
+- **In game**: on a view switch the active label of the view bar hops, and a level shows its number and name when it starts (`ShowLevelTitle`).
+
+### SettingsController
+
+| | |
+|---|---|
+| **Owns** | the player's options, saved in `user://settings.cfg` (section `options`) |
+| **Receives** | `Get(key)` (returns the value or its default), `Set(key, value)` (saves at once) |
+| **Emits** | nothing |
+
+Keys: `master`, `effects`, `interface` (volumes 0 to 1, defaults 0.8, 1, 0.8), `shake` (0 to 1, default 1), `fullscreen` (0 or 1). It only stores them: the GameManager applies every one at start (`ApplyAllSettings`) and on each change (`ApplySetting`): volumes to the AudioController, shake to the CameraController (`SetShakeScale`), fullscreen to the window.
 
 ### BackgroundController
 
@@ -144,11 +161,11 @@ Owns the neon pyramids floating behind every level (`scripts/BackgroundControlle
 
 | | |
 |---|---|
-| **Owns** | one `AudioStreamPlayer` per sound, created in `OnReady` from `res://audio/<name>.wav` |
-| **Receives** | `Play(sound)`, with a `SoundId` from `GameTypes.h`; the pitch varies a little each time |
+| **Owns** | one `AudioStreamPlayer` per sound, created in `OnReady` from `res://audio/<name>.wav`, and the `Effects` and `Interface` audio buses, which it creates feeding `Master` |
+| **Receives** | `Play(sound)`, with a `SoundId` from `GameTypes.h`; the pitch varies a little each time, except for menu sounds. `SetVolume(bus, amount)`, 0 silent to 1 full |
 | **Emits** | nothing |
 
-It adds itself to the `audio` group. Any script plays a sound with `PlaySound(node, SOUND_...)` from `ElementHelpers.h`, which finds the module through that group and stays silent if there is none. The sounds are synthesized by a script, so they can be replaced by real files with the same names at any time. `sound_volume` on the node shifts all of them, in decibels.
+It adds itself to the `audio` group. Any script plays a sound with `PlaySound(node, SOUND_...)` from `ElementHelpers.h`, which finds the module through that group and stays silent if there is none. The sounds are synthesized by a script, so they can be replaced by real files with the same names at any time. `sound_volume` on the node shifts all of them, in decibels. Game sounds play on the `Effects` bus and the menu sounds (`SOUND_UI_MOVE`, `SOUND_UI_CONFIRM`, `SOUND_UI_BACK`) on `Interface`, so the options screen can set each apart.
 
 ---
 
@@ -330,10 +347,12 @@ scripts/
   LevelController.cpp
   UIController.cpp
   AudioController.cpp
+  SettingsController.cpp    the player's options, saved in user://settings.cfg
+  BackgroundController.cpp  the neon pyramids behind every level
   shared/GameTypes.h        view, death, layer and sound enums
   shared/ElementHelpers.h   shared helpers: bodies in an area, drop shadow, world box of a shape, PlaySound
   shared/CrateBody.h        the crate body shared by crates and robots: falling, rivers, fans, holes, rows of crates, riders
-audio/                      the sound effects, one .wav per SoundId
+audio/                      the sound effects, one .wav per SoundId (ui_move, ui_confirm, ui_back for the menus)
   elements/Crate.cpp, Plate.cpp, Door.cpp, Spikes.cpp, Exit.cpp
 ```
 

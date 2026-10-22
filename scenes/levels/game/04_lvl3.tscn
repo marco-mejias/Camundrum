@@ -104,46 +104,50 @@ crate_fall_limit = -12.0
 [node name="Plate" parent="." unique_id=1863269879 instance=ExtResource("5_l6os5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, -1.8852097, 5.5)
 target = NodePath("../Door")
+stays_pressed = false
 
-[node name="FanTrampoline" parent="." instance=ExtResource("6_l6os5")]
+[node name="FanTrampoline" parent="." unique_id=1557886795 instance=ExtResource("6_l6os5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 4.5, -0.5)
 
-[node name="FanCannon" parent="." instance=ExtResource("6_l6os5")]
+[node name="FanCannon" parent="." unique_id=1661400330 instance=ExtResource("6_l6os5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.5, -0.5)
 
-[node name="WellWallLeft" parent="." instance=ExtResource("1_sb7sb")]
+[node name="WellWallLeft" parent="." unique_id=624515707 instance=ExtResource("1_sb7sb")]
 transform = Transform3D(1, 0, 0, 0, 2, 0, 0, 0, 5, -2.5, 1, 2)
 
-[node name="WellWallRight" parent="." instance=ExtResource("1_sb7sb")]
+[node name="WellWallRight" parent="." unique_id=194656263 instance=ExtResource("1_sb7sb")]
 transform = Transform3D(1, 0, 0, 0, 2, 0, 0, 0, 5, 0.5, 1, 2)
 
-[node name="Catcher" parent="." instance=ExtResource("12_view")]
+[node name="Catcher" parent="." unique_id=1462767993 instance=ExtResource("12_view")]
 transform = Transform3D(1.8, 0, 0, 0, 2, 0, 0, 0, 0.5, -1, -0.94, 6.46)
 solid_view = 2
 
-[node name="HoleColumn0" parent="." instance=ExtResource("7_o056f")]
+[node name="HoleColumn0" parent="." unique_id=1893368759 instance=ExtResource("7_o056f")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.5, 0)
 
-[node name="HoleColumn1" parent="." instance=ExtResource("7_o056f")]
+[node name="HoleColumn1" parent="." unique_id=964310013 instance=ExtResource("7_o056f")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1.5, 0)
 
-[node name="HoleColumn2" parent="." instance=ExtResource("7_o056f")]
+[node name="HoleColumn2" parent="." unique_id=1466724625 instance=ExtResource("7_o056f")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 2.5, 0)
 
-[node name="HoleColumn3" parent="." instance=ExtResource("7_o056f")]
+[node name="HoleColumn3" parent="." unique_id=473497095 instance=ExtResource("7_o056f")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 3.5, 0)
 
-[node name="HoleColumn4" parent="." instance=ExtResource("7_o056f")]
+[node name="HoleColumn4" parent="." unique_id=1221666508 instance=ExtResource("7_o056f")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 4.5, 0)
 
-[node name="HoleColumn5" parent="." instance=ExtResource("7_o056f")]
+[node name="HoleColumn5" parent="." unique_id=2126702089 instance=ExtResource("7_o056f")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 5.5, 0)
 
-[node name="HoleColumn6" parent="." instance=ExtResource("7_o056f")]
+[node name="HoleColumn6" parent="." unique_id=767705445 instance=ExtResource("7_o056f")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 6.5, 0)
 
-[node name="HoleColumn7" parent="." instance=ExtResource("7_o056f")]
+[node name="HoleColumn7" parent="." unique_id=857576760 instance=ExtResource("7_o056f")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 7.5, 0)
 
-[node name="HoleColumn8" parent="." instance=ExtResource("7_o056f")]
+[node name="HoleColumn8" parent="." unique_id=1674645783 instance=ExtResource("7_o056f")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 8.5, 0)
+
+[node name="Block4" parent="." unique_id=1435950386 instance=ExtResource("1_sb7sb")]
+transform = Transform3D(-4.371139e-08, 3.995, 0, -1, -1.7462699e-07, 0, 0, 0, 7.615, 7.166092, 5.0000005, 0.9860072)

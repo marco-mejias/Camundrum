@@ -286,6 +286,12 @@ Each view has a strong background of its own: blue in side, red in top, green in
 
 Many small white neon pyramids drift slowly left to right behind the level and turn, read differently in each view like everything else: in iso they are whole pyramids turning on themselves; in side they are triangles rolling like wheels (pressed flat in depth, because the side camera looks slightly down); in top their tip faces the camera and they turn on the spot. The change follows the camera move. The glow comes from the `WorldEnvironment` (glow threshold 1.0); the lines are drawn brighter than that, so the level itself does not glow.
 
+### Menus and in-game messages
+
+The menus move: each one fades in and its pieces come in one after another, the title's letters drop in and then wave with colours drifting through the three views, and the focused button or slider grows a little with a soft tick. Pressing sounds a confirm, going back a softer sound, on their own `Interface` volume. An options screen (main and pause menu) sets the master, effects and interface volumes, the screen shake and fullscreen, saved between sessions.
+
+In game, on a view switch the active label of the view bar hops; a level shows its number and name for a moment when it starts. The camera shakes are scaled by the screen shake option. Details in ARCHITECTURE.md, UIController and SettingsController.
+
 ### Controls during a turn
 
 While a turntable or a layer turns, and while the turned pieces slide back to the front edge, the player cannot move, use anything or ask for a view: those requests are dropped, not queued. When it is over the player starts from rest (`StopMotion`), so no speed from before the turn carries into the new layout. A view switch alone still keeps the latest view key pressed during its slide.

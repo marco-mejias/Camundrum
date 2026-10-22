@@ -7,6 +7,7 @@
 #include <Godot/classes/scene_tree.hpp>
 #include <Godot/variant/variant.hpp>
 #include <Godot/variant/callable.hpp>
+#include <Godot/classes/display_server.hpp>
 
 // Game
 #include "scripts/shared/GameTypes.h"
@@ -77,6 +78,8 @@ Node* camera_controller = nullptr;
 Node* depth_controller = nullptr;
 Node* ui_controller = nullptr;
 Node* background_controller = nullptr;
+Node* settings_controller = nullptr;
+Node* audio_controller = nullptr;
 Node* level = nullptr;
 Node* player = nullptr;
 Node* turning_carrier = nullptr;
@@ -278,8 +281,10 @@ void StartGameLevel(int index)
 	screen = SCREEN_PLAYING;
 	AttachLevel();
 
-	// Close the menus and reveal the level
+	// Close the menus and reveal the level, naming it as it appears
 	if (ui_controller) ui_controller->call("HideMenus");
+	String name = level_controller ? (String)level_controller->call("LevelName", index) : String();
+	if (ui_controller) ui_controller->call("ShowLevelTitle", String("Level ") + String::num_int64(index + 1) + String("  ") + String::chr(0xB7) + String("  ") + name);
 	if (ui_controller) ui_controller->call("FadeTo", 1.0, 0.0);
 	if (ui_controller) ui_controller->call("FadeTo", 0.0, 0.35);
 }
@@ -537,6 +542,56 @@ void OnMenuPressed()
 	test_mode = false;
 	OpenMainMenu(0);
 }
+// Options
+double SettingValue(const String& key)
+{
+	// Purpose: read one of the player's options from the settings module.
+
+	// Its default when there is no settings module
+	if (!settings_controller) return key == "fullscreen" ? 0.0 : 1.0;
+	return (double)settings_controller->call("Get", key);
+}
+void ApplySetting(const String& key, double value)
+{
+	// Purpose: hand one option to the module it belongs to: volumes to the audio, shake to the camera, fullscreen to the window.
+
+	// Volumes go to the audio bus of the same name
+	if (key == "master" && audio_controller) audio_controller->call("SetVolume", "Master", value);
+	if (key == "effects" && audio_controller) audio_controller->call("SetVolume", "Effects", value);
+	if (key == "interface" && audio_controller) audio_controller->call("SetVolume", "Interface", value);
+	if (key == "shake" && camera_controller) camera_controller->call("SetShakeScale", value);
+
+	// The window fills the screen or goes back to a window
+	if (key == "fullscreen")
+	{
+		DisplayServer* display = DisplayServer::get_singleton();
+		DisplayServer::WindowMode wanted = value > 0.5 ? DisplayServer::WINDOW_MODE_FULLSCREEN : DisplayServer::WINDOW_MODE_WINDOWED;
+		if (display && display->window_get_mode() != wanted) display->window_set_mode(wanted);
+	}
+}
+void ApplyAllSettings()
+{
+	// Purpose: put every saved option into effect, when the game starts.
+
+	// Each one in turn
+	const char* keys[5] = { "master", "effects", "interface", "shake", "fullscreen" };
+	for (const char* key : keys) ApplySetting(key, SettingValue(key));
+}
+void OnOptionsPressed()
+{
+	// Purpose: react to an Options button, opening the options screen with the current settings.
+
+	// The interface comes back to the menu it was opened from by itself
+	if (ui_controller) ui_controller->call("ShowOptions", SettingValue("master"), SettingValue("effects"), SettingValue("interface"), SettingValue("shake"), SettingValue("fullscreen") > 0.5 ? 1 : 0);
+}
+void OnSettingChanged(String key, double value)
+{
+	// Purpose: react to the player changing an option: save it and put it into effect at once.
+
+	// Keep and apply
+	if (settings_controller) settings_controller->call("Set", key, value);
+	ApplySetting(key, value);
+}
 void OnQuitPressed()
 {
 	// Purpose: react to the Quit button of the main menu.
@@ -571,6 +626,8 @@ void OnReady(Caller* instance)
 	depth_controller = game->get_node_or_null("DepthController");
 	ui_controller = game->get_node_or_null("UI");
 	background_controller = game->get_node_or_null("Background");
+	settings_controller = game->get_node_or_null("Settings");
+	audio_controller = game->get_node_or_null("AudioController");
 
 	// Listen to what the input asks for
 	if (input_controller) input_controller->connect("view_requested", Callable(game, "OnViewRequested"));
@@ -590,6 +647,11 @@ void OnReady(Caller* instance)
 	if (ui_controller) ui_controller->connect("restart_pressed", Callable(game, "OnRestartPressed"));
 	if (ui_controller) ui_controller->connect("menu_pressed", Callable(game, "OnMenuPressed"));
 	if (ui_controller) ui_controller->connect("quit_pressed", Callable(game, "OnQuitPressed"));
+	if (ui_controller) ui_controller->connect("options_pressed", Callable(game, "OnOptionsPressed"));
+	if (ui_controller) ui_controller->connect("setting_changed", Callable(game, "OnSettingChanged"));
+
+	// The player's saved options take effect before anything is seen or heard
+	ApplyAllSettings();
 
 	// A level number on the Game node plays that test level straight away, with no menu
 	test_mode = level_number >= 0;
@@ -614,6 +676,8 @@ void OnDestroy(Caller* instance)
 	depth_controller = nullptr;
 	ui_controller = nullptr;
 	background_controller = nullptr;
+	settings_controller = nullptr;
+	audio_controller = nullptr;
 	level = nullptr;
 	player = nullptr;
 	turning_carrier = nullptr;

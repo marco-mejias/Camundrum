@@ -9,3 +9,6 @@
 # Local tool settings, they hold paths of this computer
 .mcp.json
 .claude/
+
+# Exported game builds
+builds/

@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://cx8ujsvm0usl8" path="res://scripts/AudioController.cpp" id="7_audio"]
 [ext_resource type="Script" uid="uid://cmljdxagoy0q2" path="res://scripts/LevelController.cpp" id="8_levels"]
 [ext_resource type="Script" path="res://scripts/BackgroundController.cpp" id="9_background"]
+[ext_resource type="Script" path="res://scripts/SettingsController.cpp" id="10_settings"]
 
 [sub_resource type="Environment" id="Environment_game"]
 ambient_light_source = 2
@@ -81,6 +82,33 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
+[sub_resource type="StyleBoxFlat" id="Style_slider"]
+content_margin_top = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.16, 0.19, 0.28, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="Style_slider_fill"]
+content_margin_top = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.42, 0.62, 0.95, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="Style_slider_fill_focus"]
+content_margin_top = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.62, 0.78, 1, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
 [sub_resource type="Theme" id="Theme_menus"]
 Button/colors/font_color = Color(0.92, 0.94, 1, 1)
 Button/colors/font_disabled_color = Color(0.45, 0.47, 0.55, 1)
@@ -92,6 +120,11 @@ Button/styles/normal = SubResource("Style_button")
 Button/styles/pressed = SubResource("Style_button_pressed")
 Label/colors/font_color = Color(0.92, 0.94, 1, 1)
 Label/font_sizes/font_size = 24
+HSlider/styles/slider = SubResource("Style_slider")
+HSlider/styles/grabber_area = SubResource("Style_slider_fill")
+HSlider/styles/grabber_area_highlight = SubResource("Style_slider_fill_focus")
+CheckButton/colors/font_color = Color(0.92, 0.94, 1, 1)
+CheckButton/font_sizes/font_size = 22
 
 [node name="Game" type="Node" unique_id=1171487440]
 script = ExtResource("1_gm")
@@ -104,6 +137,9 @@ environment = SubResource("Environment_game")
 
 [node name="Background" type="Node3D" parent="."]
 script = ExtResource("9_background")
+
+[node name="Settings" type="Node" parent="."]
+script = ExtResource("10_settings")
 
 [node name="InputController" type="Node" parent="." unique_id=1211323316]
 process_physics_priority = -10
@@ -223,7 +259,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.1, 0.11, 0.16, 1)
+color = Color(0.04, 0.05, 0.09, 0.84)
 
 [node name="Center" type="CenterContainer" parent="UI/Menus/MainMenu" unique_id=1741805479]
 layout_mode = 0
@@ -243,6 +279,17 @@ theme_override_font_sizes/font_size = 64
 text = "CAMUNDRUM"
 horizontal_alignment = 1
 
+[node name="Subtitle" type="Label" parent="UI/Menus/MainMenu/Center/Box"]
+modulate = Color(1, 1, 1, 0.7)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "a puzzle in three views"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="UI/Menus/MainMenu/Center/Box"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+
 [node name="Message" type="Label" parent="UI/Menus/MainMenu/Center/Box" unique_id=1576385]
 visible = false
 modulate = Color(0.55, 1, 0.75, 1)
@@ -258,6 +305,10 @@ text = "Play"
 layout_mode = 2
 text = "Select level"
 
+[node name="Options" type="Button" parent="UI/Menus/MainMenu/Center/Box"]
+layout_mode = 2
+text = "Options"
+
 [node name="Quit" type="Button" parent="UI/Menus/MainMenu/Center/Box" unique_id=1877811685]
 layout_mode = 2
 text = "Quit"
@@ -269,7 +320,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.1, 0.11, 0.16, 1)
+color = Color(0.04, 0.05, 0.09, 0.86)
 
 [node name="Center" type="CenterContainer" parent="UI/Menus/LevelSelect" unique_id=380706267]
 layout_mode = 0
@@ -338,9 +389,123 @@ text = "Restart"
 layout_mode = 2
 text = "Select level"
 
+[node name="Options" type="Button" parent="UI/Menus/PauseMenu/Center/Box"]
+layout_mode = 2
+text = "Options"
+
 [node name="Menu" type="Button" parent="UI/Menus/PauseMenu/Center/Box" unique_id=1053762837]
 layout_mode = 2
 text = "Main menu"
+
+[node name="OptionsMenu" type="ColorRect" parent="UI/Menus"]
+visible = false
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.05, 0.09, 0.86)
+
+[node name="Center" type="CenterContainer" parent="UI/Menus/OptionsMenu"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Box" type="VBoxContainer" parent="UI/Menus/OptionsMenu/Center"]
+custom_minimum_size = Vector2(560, 0)
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="Title" type="Label" parent="UI/Menus/OptionsMenu/Center/Box"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "Options"
+horizontal_alignment = 1
+
+[node name="Rows" type="GridContainer" parent="UI/Menus/OptionsMenu/Center/Box"]
+layout_mode = 2
+theme_override_constants/h_separation = 28
+theme_override_constants/v_separation = 18
+columns = 2
+
+[node name="MasterLabel" type="Label" parent="UI/Menus/OptionsMenu/Center/Box/Rows"]
+layout_mode = 2
+text = "Master volume"
+
+[node name="Master" type="HSlider" parent="UI/Menus/OptionsMenu/Center/Box/Rows"]
+custom_minimum_size = Vector2(260, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
+value = 0.8
+
+[node name="EffectsLabel" type="Label" parent="UI/Menus/OptionsMenu/Center/Box/Rows"]
+layout_mode = 2
+text = "Effects"
+
+[node name="Effects" type="HSlider" parent="UI/Menus/OptionsMenu/Center/Box/Rows"]
+custom_minimum_size = Vector2(260, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
+value = 1.0
+
+[node name="InterfaceLabel" type="Label" parent="UI/Menus/OptionsMenu/Center/Box/Rows"]
+layout_mode = 2
+text = "Interface"
+
+[node name="Interface" type="HSlider" parent="UI/Menus/OptionsMenu/Center/Box/Rows"]
+custom_minimum_size = Vector2(260, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
+value = 0.8
+
+[node name="ShakeLabel" type="Label" parent="UI/Menus/OptionsMenu/Center/Box/Rows"]
+layout_mode = 2
+text = "Screen shake"
+
+[node name="Shake" type="HSlider" parent="UI/Menus/OptionsMenu/Center/Box/Rows"]
+custom_minimum_size = Vector2(260, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
+value = 1.0
+
+[node name="FullscreenLabel" type="Label" parent="UI/Menus/OptionsMenu/Center/Box/Rows"]
+layout_mode = 2
+text = "Fullscreen"
+
+[node name="Fullscreen" type="CheckButton" parent="UI/Menus/OptionsMenu/Center/Box/Rows"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="Back" type="Button" parent="UI/Menus/OptionsMenu/Center/Box"]
+layout_mode = 2
+text = "Back"
+
+[node name="LevelTitle" type="Label" parent="UI"]
+visible = false
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 72.0
+offset_bottom = 150.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 38
+text = "Level 1"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="Fade" type="ColorRect" parent="UI" unique_id=1881094049]
 anchors_preset = 15
