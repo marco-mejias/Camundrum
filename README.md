@@ -4,6 +4,8 @@ A 3D puzzle platformer about one level read from three cameras: **side**, **top*
 Every switch of camera changes the rules of the world. In side the level is a classic platformer, in top the back wall becomes the floor of a top-down game, and in iso the real 3D depth comes back.
 The whole game logic is written in C++ through the **Jenova Framework**, which runs native C++ scripts inside Godot 4.7. This project was a deep dive into gameplay architecture, level design and game feel, built around one strong idea: depth is flattened when you look from the side or from above, but the world never forgets it.
 
+# The GIFs look a bit laggy due to compression techniques, sorry for the inconvenience
+
 <!-- Add a gameplay GIF here: drag the file into a GitHub issue or the README editor and paste the link -->
 <img width="1918" height="934" alt="camundrum-gif-1" src="https://github.com/user-attachments/assets/b2ff418f-4626-40c8-bfb8-7e060c86259b" />
 
