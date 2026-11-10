@@ -5,6 +5,11 @@ Every switch of camera changes the rules of the world. In side the level is a cl
 The whole game logic is written in C++ through the **Jenova Framework**, which runs native C++ scripts inside Godot 4.7. This project was a deep dive into gameplay architecture, level design and game feel, built around one strong idea: depth is flattened when you look from the side or from above, but the world never forgets it.
 
 <!-- Add a gameplay GIF here: drag the file into a GitHub issue or the README editor and paste the link -->
+<img width="1918" height="934" alt="camundrum-gif-1" src="https://github.com/user-attachments/assets/b2ff418f-4626-40c8-bfb8-7e060c86259b" />
+
+![Uploading camundrum-gif-2.gif…]()
+![Uploading camundrum-gif-2.gif…]()
+
 
 ## 🛠️ Technologies
 
@@ -46,6 +51,7 @@ A level controller loads levels in order, unlocks them as you progress and saves
 An audio controller plays the game's sound effects on view switches, jumps, landings, plates, doors and deaths.
 
 <!-- Add screenshots of the three views here -->
+<img width="1902" height="922" alt="camundrum-gif-2" src="https://github.com/user-attachments/assets/4d7012d6-c55b-499b-80a4-ad4e913c588b" />
 
 ---
 
