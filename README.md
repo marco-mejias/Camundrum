@@ -7,9 +7,6 @@ The whole game logic is written in C++ through the **Jenova Framework**, which r
 <!-- Add a gameplay GIF here: drag the file into a GitHub issue or the README editor and paste the link -->
 <img width="1918" height="934" alt="camundrum-gif-1" src="https://github.com/user-attachments/assets/b2ff418f-4626-40c8-bfb8-7e060c86259b" />
 
-![Uploading camundrum-gif-2.gif…]()
-![Uploading camundrum-gif-2.gif…]()
-
 
 ## 🛠️ Technologies
 
@@ -22,9 +19,12 @@ The whole game logic is written in C++ through the **Jenova Framework**, which r
 
 ---
 
-## 💡 My Core Contributions
+## 💡 Core Elements
 
-I designed the game and built its systems, levels and feel. My main responsibilities included:
+<img width="1008" height="918" alt="camundrum-gif-4" src="https://github.com/user-attachments/assets/c42f3c0f-3aac-4d25-9b04-e14e4ee87315" />
+
+
+I designed the game and built its systems, levels and feel. I would like to highlight:
 
 ### 1. Three Views, One World (Depth System)
 The heart of the game is a depth system that lets the player switch camera at any time, even mid-air.
@@ -43,7 +43,9 @@ Each mechanic is its own reusable scene and C++ script, following a shared contr
 * **Fans** that push you away from the board in iso, blow you into the void in side, and work as a jump button in top that lets you climb onto walls.
 * **Real holes in the board** that only matter when something lives on that floor.
 * **View blocks and view flags**, solid or counting only in one camera.
-* **Floor swaps, depth lifts, turntables, plates, levers, wall buttons and doors**.
+* **Floor swaps, depth lifts, turntables, plates, levers, wall buttons, doors and...robots?**.
+  
+<img width="1872" height="918" alt="camundrum-gif-3" src="https://github.com/user-attachments/assets/6625be6e-a6b5-471b-a806-57ef1998eabb" />
 
 ### 4. Camera, Levels & Menus
 A camera controller animates between the three cameras and frames every level automatically from its size.
