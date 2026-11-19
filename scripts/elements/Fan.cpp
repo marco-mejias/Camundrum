@@ -1,5 +1,7 @@
 
-/* Camundrum - Fan Element */
+/* Camundrum - Fan Element
+ * A fan on the board: pushes in iso, blows into the void in side, works as a jump in top.
+ */
 
 // Godot SDK
 #include <Godot/godot.hpp>
@@ -26,11 +28,10 @@ using namespace godot;
 using namespace jenova::sdk;
 
 // Physics questions, kept outside the script block because Jenova cannot read these parameter types inside it
+// Find how far the wind gets from the board: up to the first solid piece in front of the fan, or the front edge of the level
+// The player and crates do not stop the wind, it blows them along.
 static float WindReach(Node3D* fan, float face_z, float front_z)
 {
-	// Purpose: find how far the wind gets from the board: up to the first solid piece in front of the fan, or the front edge of the level.
-	// The player and crates do not stop the wind, it blows them along.
-
 	// Leave out the bodies that move by themselves, and the fan's own wall of air
 	TypedArray<RID> ignored;
 	const char* groups[2] = { "player", "crate" };
@@ -65,11 +66,11 @@ JENOVA_PROPERTY(bool, starts_on, true)
 // The state of each fan lives in its node's metadata: wind_speed, starts_on, on, view, frozen, face_z, front_z, spin
 // A fan sits on the board and blows straight out of it, towards the camera: it pushes in iso, blows into the void in side, and raises in top like a jump seen from above
 
-// Look and feel
+// ---- Look and feel ----
+
+// Make the fan behave as its switch says, and show the gust while it runs
 void ApplyState(Node3D* fan)
 {
-	// Purpose: make the fan behave as its switch says, and show the gust while it runs.
-
 	// The column of air never stops anything by itself: in side it blows bodies into the void instead
 	// The depth module still reads solid_view on it, so a switch to side that would leave something inside the column is refused; -1 means never
 	bool on = fan->get_meta("on", true);
@@ -85,11 +86,11 @@ void ApplyState(Node3D* fan)
 	CPUParticles3D* gust = (CPUParticles3D*)fan->get_node_or_null("Gust");
 	if (gust) gust->set_emitting(on);
 }
+
+// Size the column of air from the board to the front edge of the level, for the wall of side and the gust
 void BuildColumn(Node3D* fan)
 {
-	// Purpose: size the column of air from the board to the front edge of the level, for the wall of side and the gust.
-
-	// From the fan, on the board's face, to the level's front edge
+	// 1. From the fan, on the board's face, to the level's front edge
 	float face_z = fan->get_global_position().z;
 	float front_z = (float)(double)fan->get_parent()->get_meta("flat_front_z", 4.5);
 	float length = front_z - face_z;
@@ -97,7 +98,7 @@ void BuildColumn(Node3D* fan)
 	fan->set_meta("face_z", face_z);
 	fan->set_meta("front_z", front_z);
 
-	// The wall of air fills the fan's cell along the whole depth, so in side it stands wherever the player is flattened to
+	// 2. The wall of air fills the fan's cell along the whole depth, so in side it stands wherever the player is flattened to
 	CollisionShape3D* shape = (CollisionShape3D*)fan->get_node_or_null("Wall/Collision");
 	if (shape)
 	{
@@ -108,16 +109,15 @@ void BuildColumn(Node3D* fan)
 		shape->set_position(Vector3(0.0f, 0.0f, length * 0.5f));
 	}
 
-	// The gust lives long enough to cross the whole column
+	// 3. The gust lives long enough to cross the whole column
 	CPUParticles3D* gust = (CPUParticles3D*)fan->get_node_or_null("Gust");
 	double speed = fan->get_meta("wind_speed", 7.0);
 	if (gust && speed > 0.1) gust->set_lifetime(length / speed);
 }
 
+// Blow on what is over the fan in a flat view: in side it is blown off the level into the void, in top it is raised like a jump
 void BlowFlat(Node3D* fan, int view)
 {
-	// Purpose: blow on what is over the fan in a flat view: in side it is blown off the level into the void, in top it is raised like a jump.
-
 	// The fan's cell across the board
 	Vector3 center = fan->get_global_position();
 	Vector3 scale = fan->get_global_transform().basis.get_scale();
@@ -153,54 +153,54 @@ void BlowFlat(Node3D* fan, int view)
 	}
 }
 
-// Contract
+// ---- Contract ----
+
+// Part of the element contract, sets the fan up for the view that starts
 void OnViewChanged(Caller* instance, int view)
 {
-	// Purpose: part of the element contract, sets the fan up for the view that starts.
-
 	// Store the view and apply it
 	auto fan = GetSelf<Node3D>(instance);
 	fan->set_meta("view", view);
 	ApplyState(fan);
 }
+
+// Part of the element contract, stops the wind while the level changes shape
 void SetFrozen(Caller* instance, int frozen)
 {
-	// Purpose: part of the element contract, stops the wind while the level changes shape.
-
 	// Store it
 	GetSelf<Node3D>(instance)->set_meta("frozen", frozen != 0);
 }
+
+// Let a plate, lever or button switch the fan on
 void Activate(Caller* instance)
 {
-	// Purpose: let a plate, lever or button switch the fan on.
-
 	// On, and apply it
 	auto fan = GetSelf<Node3D>(instance);
 	fan->set_meta("on", true);
 	ApplyState(fan);
 }
+
+// Let a plate, lever or button switch the fan off
 void Deactivate(Caller* instance)
 {
-	// Purpose: let a plate, lever or button switch the fan off.
-
 	// Off, and apply it
 	auto fan = GetSelf<Node3D>(instance);
 	fan->set_meta("on", false);
 	ApplyState(fan);
 }
+
+// Let a lever or button flip the fan between on and off
 void Toggle(Caller* instance)
 {
-	// Purpose: let a lever or button flip the fan between on and off.
-
 	// Flip, and apply it
 	auto fan = GetSelf<Node3D>(instance);
 	fan->set_meta("on", !(bool)fan->get_meta("on", true));
 	ApplyState(fan);
 }
+
+// Part of the element contract, puts the fan back as it started when the level restarts
 void Reset(Caller* instance)
 {
-	// Purpose: part of the element contract, puts the fan back as it started when the level restarts.
-
 	// Back to its starting switch
 	auto fan = GetSelf<Node3D>(instance);
 	fan->set_meta("on", fan->get_meta("starts_on", true));
@@ -208,11 +208,11 @@ void Reset(Caller* instance)
 	ApplyState(fan);
 }
 
-// Routines
+// ---- Routines ----
+
+// Called once the node and its children are in the tree, builds the column of air and starts the fan
 void OnReady(Caller* instance)
 {
-	// Purpose: called once the node and its children are in the tree, builds the column of air and starts the fan.
-
 	// Copy the inspector settings onto the node, where every function can read them safely
 	auto fan = GetSelf<Node3D>(instance);
 	fan->set_meta("wind_speed", wind_speed);
@@ -226,11 +226,11 @@ void OnReady(Caller* instance)
 	BuildColumn(fan);
 	ApplyState(fan);
 }
+
+// Called every physics frame, blows on the player and crates as the view says: away from the board in iso, into the void in side, up in top
 void OnPhysicsProcess(Caller* instance, double _delta)
 {
-	// Purpose: called every physics frame, blows on the player and crates as the view says: away from the board in iso, into the void in side, up in top.
-
-	// Only while running and while the world is not waiting
+	// 1. Only while running and while the world is not waiting
 	auto fan = GetSelf<Node3D>(instance);
 	if (!(bool)fan->get_meta("on", true) || (bool)fan->get_meta("frozen", false)) return;
 	int view = fan->get_meta("view", VIEW_SIDE);
@@ -240,14 +240,14 @@ void OnPhysicsProcess(Caller* instance, double _delta)
 		return;
 	}
 
-	// The column of air, across the fan's cell and from the board to the first solid piece in front
+	// 2. The column of air, across the fan's cell and from the board to the first solid piece in front
 	float face_z = (float)(double)fan->get_meta("face_z", 0.0);
 	float reach = WindReach(fan, face_z, (float)(double)fan->get_meta("front_z", 4.5));
 	Vector3 center = fan->get_global_position();
 	Vector3 scale = fan->get_global_transform().basis.get_scale();
 	AABB column = AABB(Vector3(center.x - 0.48f * scale.x, center.y - 0.48f * scale.y, face_z), Vector3(0.96f * scale.x, 0.96f * scale.y, reach - face_z));
 
-	// Every body in it is blown away from the board, combined with any river current it is in
+	// 3. Every body in it is blown away from the board, combined with any river current it is in
 	double speed = fan->get_meta("wind_speed", 7.0);
 	const char* groups[2] = { "player", "crate" };
 	for (const char* group : groups)
@@ -264,10 +264,10 @@ void OnPhysicsProcess(Caller* instance, double _delta)
 		}
 	}
 }
+
+// Called every frame, spins the blades while the fan runs
 void OnProcess(Caller* instance, double _delta)
 {
-	// Purpose: called every frame, spins the blades while the fan runs.
-
 	// Turn the blades around the fan's axis
 	auto fan = GetSelf<Node3D>(instance);
 	if (!(bool)fan->get_meta("on", true)) return;

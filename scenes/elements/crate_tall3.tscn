@@ -1,9 +1,14 @@
 [gd_scene format=3]
 
+[ext_resource type="Shader" path="res://shaders/block.gdshader" id="90_block_shader"]
+
 [ext_resource type="Script" path="res://scripts/elements/Crate.cpp" id="1_crate"]
 
-[sub_resource type="StandardMaterial3D" id="Material_crate"]
-albedo_color = Color(0.55, 0.34, 0.17, 1)
+[sub_resource type="ShaderMaterial" id="Material_crate"]
+shader = ExtResource("90_block_shader")
+shader_parameter/albedo = Color(0.55, 0.34, 0.17, 1)
+shader_parameter/mesh_size = Vector3(0.96, 2.96, 0.96)
+shader_parameter/seam_dark = 0.12
 
 [sub_resource type="BoxMesh" id="BoxMesh_crate"]
 material = SubResource("Material_crate")

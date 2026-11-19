@@ -1,13 +1,21 @@
 [gd_scene format=3 uid="uid://d0cklo3chni14"]
 
 [ext_resource type="Script" uid="uid://bva6trqtfa5hp" path="res://scripts/PlayerController.cpp" id="1_pc"]
-[ext_resource type="Shader" path="res://shaders/xray_dots.gdshader" id="2_xray"]
+[ext_resource type="Shader" uid="uid://skb7ds641n5i" path="res://shaders/xray_dots.gdshader" id="2_xray"]
 
 [sub_resource type="StandardMaterial3D" id="Material_player"]
 albedo_color = Color(1, 0.48, 0.06, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_player"]
 material = SubResource("Material_player")
+
+[sub_resource type="ShaderMaterial" id="Material_xray"]
+render_priority = 10
+shader = ExtResource("2_xray")
+shader_parameter/tint = Color(1, 0.62, 0.22, 0.95)
+shader_parameter/spacing = 7.0
+shader_parameter/dot_radius = 1.9
+shader_parameter/hidden_margin = 0.0008
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_player"]
 
@@ -35,22 +43,27 @@ material = SubResource("Material_dust")
 _data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
 point_count = 2
 
-[sub_resource type="ShaderMaterial" id="Material_xray"]
-render_priority = 10
-shader = ExtResource("2_xray")
-shader_parameter/tint = Color(1, 0.62, 0.22, 0.95)
-shader_parameter/spacing = 7.0
-shader_parameter/dot_radius = 1.9
-shader_parameter/hidden_margin = 0.0008
-
 [node name="Player" type="CharacterBody3D" unique_id=1278754872 groups=["depth", "player"]]
 collision_layer = 5
 script = ExtResource("1_pc")
+move_speed = 6.0
+ground_acceleration = 70.0
+ground_deceleration = 90.0
+air_acceleration = 40.0
+jump_speed = 9.0
+rise_gravity = 25.0
+fall_gravity = 45.0
+max_fall_speed = 22.0
+jump_cut = 0.45
+coyote_time = 0.1
+jump_buffer_time = 0.12
+fall_limit = -12.0
+push_speed = 3.5
 
 [node name="Mesh" type="MeshInstance3D" parent="." unique_id=1494684455]
 mesh = SubResource("BoxMesh_player")
 
-[node name="XRay" type="MeshInstance3D" parent="Mesh"]
+[node name="XRay" type="MeshInstance3D" parent="Mesh" unique_id=1649238978]
 cast_shadow = 0
 mesh = SubResource("BoxMesh_player")
 surface_material_override/0 = SubResource("Material_xray")
@@ -58,13 +71,13 @@ surface_material_override/0 = SubResource("Material_xray")
 [node name="Collision" type="CollisionShape3D" parent="." unique_id=2134189422]
 shape = SubResource("BoxShape3D_player")
 
-[node name="Shadow" type="MeshInstance3D" parent="."]
+[node name="Shadow" type="MeshInstance3D" parent="." unique_id=1287675083]
 top_level = true
 visible = false
 cast_shadow = 0
 mesh = SubResource("CylinderMesh_shadow")
 
-[node name="Dust" type="CPUParticles3D" parent="."]
+[node name="Dust" type="CPUParticles3D" parent="." unique_id=1526657347]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.45, 0)
 emitting = false
 amount = 10

@@ -1,6 +1,6 @@
 # Camundrum — Architecture
 
-Companion to [PLAN.md](PLAN.md). This describes the modules, what each one owns, and how they talk. Nothing here is built yet.
+Companion to [DESIGN.md](DESIGN.md). This describes the modules, what each one owns, and how they talk.
 
 ---
 
@@ -222,6 +222,7 @@ Plain variables in a Jenova script are shared by every node that uses it, and a 
 | `door.tscn` | StaticBody3D | `elements/Door.cpp` |
 | `exit.tscn` | Area3D | `elements/Exit.cpp` |
 | `crate.tscn` | CharacterBody3D | `elements/Crate.cpp`, a thin script over the shared body in `shared/CrateBody.h` |
+| `active_platform.tscn` | StaticBody3D, group `depth` | `elements/ActivePlatform.cpp`: a see-through ghost with its collision off until `Activate`, then solid; its own copy of the material fades between the two |
 | `robot.tscn` | CharacterBody3D, groups `crate`, `depth`, `robot` (not `pushable`) | `elements/Robot.cpp`: the same crate body plus a motor that drives it along the view's line and turns it around when it is stopped |
 | `spikes.tscn` | Area3D, with a solid StaticBody3D child | `elements/Hazard.cpp`, `on_board` off |
 | `board_spikes.tscn` | Area3D | `elements/Hazard.cpp`, `on_board` on |

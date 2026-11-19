@@ -1,5 +1,7 @@
 
-/* Camundrum - Floor Swap Element */
+/* Camundrum - Floor Swap Element
+ * Swaps the board and the ground of a part of the level (prototype, not used in the game levels).
+ */
 
 // Godot SDK
 #include <Godot/godot.hpp>
@@ -25,11 +27,11 @@ JENOVA_PROPERTY(double, swap_time, 0.7)
 
 // The state of each swap lives in its node's metadata: swap_time, swapped, target, turning, requested, progress, pieces, from
 
-// Swapping
+// ---- Swapping ----
+
+// Mirror every piece across the hinge in one go, used to undo a swap when the level restarts
 void SwapAtOnce(Node3D* hinge)
 {
-	// Purpose: mirror every piece across the hinge in one go, used to undo a swap when the level restarts.
-
 	// Mirror each piece where it stands now
 	float hinge_y = hinge->get_global_position().y;
 	float hinge_z = hinge->get_global_position().z;
@@ -42,11 +44,11 @@ void SwapAtOnce(Node3D* hinge)
 		piece->set_global_transform(SwapTransform(piece->get_global_transform(), hinge_y, hinge_z, StaysUpright(piece)));
 	}
 }
+
+// Put every piece somewhere along its way, 0 is where it started and 1 where the swap takes it
+// Each piece travels on a quarter circle around the hinge, so the whole level seems to fold over.
 void PlaceAlongFold(Node3D* hinge, double eased)
 {
-	// Purpose: put every piece somewhere along its way, 0 is where it started and 1 where the swap takes it.
-	// Each piece travels on a quarter circle around the hinge, so the whole level seems to fold over.
-
 	// The pieces and where each one started
 	float hinge_y = hinge->get_global_position().y;
 	float hinge_z = hinge->get_global_position().z;
@@ -75,10 +77,10 @@ void PlaceAlongFold(Node3D* hinge, double eased)
 		piece->set_global_transform(Transform3D(Basis(turn).scaled_local(size), origin));
 	}
 }
+
+// Ask the GameManager for permission to swap, once this frame's work is done
 void Request(Node3D* hinge)
 {
-	// Purpose: ask the GameManager for permission to swap, once this frame's work is done.
-
 	// Only ask when the wanted state differs and no question or swap is already running
 	if ((bool)hinge->get_meta("target", false) == (bool)hinge->get_meta("swapped", false)) return;
 	if ((bool)hinge->get_meta("turning", false) || (bool)hinge->get_meta("requested", false)) return;
@@ -86,47 +88,47 @@ void Request(Node3D* hinge)
 	hinge->call_deferred("emit_signal", "rotation_requested", hinge);
 }
 
-// Commands
+// ---- Commands ----
+
+// Let a lever or a button swap the floors, or swap them back
 void Toggle(Caller* instance)
 {
-	// Purpose: let a lever or a button swap the floors, or swap them back.
-
 	// Aim at the other state and ask
 	auto hinge = GetSelf<Node3D>(instance);
 	hinge->set_meta("target", !(bool)hinge->get_meta("swapped", false));
 	Request(hinge);
 }
+
+// Let a plate ask for the floors swapped
 void Activate(Caller* instance)
 {
-	// Purpose: let a plate ask for the floors swapped.
-
 	// Aim at the swapped state and ask
 	auto hinge = GetSelf<Node3D>(instance);
 	hinge->set_meta("target", true);
 	Request(hinge);
 }
+
+// Let a plate ask for the floors back as they were
 void Deactivate(Caller* instance)
 {
-	// Purpose: let a plate ask for the floors back as they were.
-
 	// Aim at the starting state and ask
 	auto hinge = GetSelf<Node3D>(instance);
 	hinge->set_meta("target", false);
 	Request(hinge);
 }
+
+// Let the GameManager refuse the swap because something would end up inside something else
 void CancelTurn(Caller* instance)
 {
-	// Purpose: let the GameManager refuse the swap because something would end up inside something else.
-
 	// Stay as it is
 	auto hinge = GetSelf<Node3D>(instance);
 	hinge->set_meta("target", hinge->get_meta("swapped", false));
 	hinge->set_meta("requested", false);
 }
+
+// Let the GameManager start the swap once it has been allowed
 void StartTurn(Caller* instance)
 {
-	// Purpose: let the GameManager start the swap once it has been allowed.
-
 	// Note every piece and where it starts, the physics routine folds them over
 	auto hinge = GetSelf<Node3D>(instance);
 	TypedArray<Node> pieces;
@@ -147,11 +149,11 @@ void StartTurn(Caller* instance)
 	hinge->set_meta("progress", 0.0);
 }
 
-// Contract
+// ---- Contract ----
+
+// Part of the element contract, puts the floors back as they started when the level restarts
 void Reset(Caller* instance)
 {
-	// Purpose: part of the element contract, puts the floors back as they started when the level restarts.
-
 	// A swap cut short is finished first, so every piece is exactly mirrored
 	auto hinge = GetSelf<Node3D>(instance);
 	if ((bool)hinge->get_meta("turning", false))
@@ -170,41 +172,41 @@ void Reset(Caller* instance)
 	hinge->set_meta("from", Array());
 }
 
-// Routines
+// ---- Routines ----
+
+// Called once the node is in the tree, prepares the swap and its signals
 void OnReady(Caller* instance)
 {
-	// Purpose: called once the node is in the tree, prepares the swap and its signals.
-
-	// Copy the inspector setting onto the node, where every function can read it safely
+	// 1. Copy the inspector setting onto the node, where every function can read it safely
 	auto hinge = GetSelf<Node3D>(instance);
 	hinge->set_meta("swap_time", swap_time);
 
-	// The same signals as a turntable, so the GameManager handles both the same way
+	// 2. The same signals as a turntable, so the GameManager handles both the same way
 	if (!hinge->has_signal("rotation_requested")) hinge->add_user_signal("rotation_requested");
 	if (!hinge->has_signal("busy_finished")) hinge->add_user_signal("busy_finished");
 
-	// Start with the floors as built
+	// 3. Start with the floors as built
 	hinge->set_meta("swapped", false);
 	hinge->set_meta("target", false);
 	hinge->set_meta("turning", false);
 	hinge->set_meta("requested", false);
 	hinge->set_meta("progress", 1.0);
 }
+
+// Called every physics frame, carries out a swap that the GameManager allowed
 void OnPhysicsProcess(Caller* instance, double _delta)
 {
-	// Purpose: called every physics frame, carries out a swap that the GameManager allowed.
-
-	// Nothing to do while not swapping
+	// 1. Nothing to do while not swapping
 	auto hinge = GetSelf<Node3D>(instance);
 	if (!(bool)hinge->get_meta("turning", false)) return;
 
-	// Advance the fold with a gentle start and end
+	// 2. Advance the fold with a gentle start and end
 	double progress = (double)hinge->get_meta("progress", 1.0) + _delta / (double)hinge->get_meta("swap_time", 0.7);
 	if (progress > 1.0) progress = 1.0;
 	hinge->set_meta("progress", progress);
 	PlaceAlongFold(hinge, progress * progress * (3.0 - 2.0 * progress));
 
-	// At the end, let the GameManager settle the level and release the world
+	// 3. At the end, let the GameManager settle the level and release the world
 	if (progress >= 1.0)
 	{
 		hinge->set_meta("turning", false);

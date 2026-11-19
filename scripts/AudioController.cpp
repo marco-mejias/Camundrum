@@ -1,5 +1,7 @@
 
-/* Camundrum - Audio Controller */
+/* Camundrum - Audio Controller
+ * Plays every sound of the game and owns the Effects and Interface volume buses.
+ */
 
 // Godot SDK
 #include <Godot/godot.hpp>
@@ -28,14 +30,14 @@ JENOVA_SCRIPT_BEGIN
 JENOVA_PROPERTY(double, sound_volume, 0.0)
 
 // State
-AudioStreamPlayer* players[SOUND_COUNT] = { nullptr };
+AudioStreamPlayer* players[SOUND_COUNT] = { nullptr }; // One player per sound, in SoundId order
 
-// Buses
+// ---- Buses ----
+
 // Game sounds play on the Effects bus and menu sounds on the Interface bus, both feeding Master, so each can have its own volume
+// Find an audio bus by name, creating it feeding Master when it does not exist yet
 int FindBus(const String& name)
 {
-	// Purpose: find an audio bus by name, creating it feeding Master when it does not exist yet.
-
 	// Look it up, or add it at the end
 	AudioServer* server = AudioServer::get_singleton();
 	int index = server->get_bus_index(name);
@@ -47,21 +49,21 @@ int FindBus(const String& name)
 	return index;
 }
 
-// Commands
+// ---- Commands ----
+
+// Let the GameManager set the volume of a bus (Master, Effects or Interface), 0 is silent and 1 is full
 void SetVolume(String bus, double amount)
 {
-	// Purpose: let the GameManager set the volume of a bus (Master, Effects or Interface), 0 is silent and 1 is full.
-
 	// Turn the amount into decibels, silent at zero
 	AudioServer* server = AudioServer::get_singleton();
 	int index = FindBus(bus);
 	server->set_bus_mute(index, amount <= 0.001);
 	server->set_bus_volume_db(index, (float)(20.0 * log10(amount > 0.001 ? amount : 0.001)));
 }
+
+// Let any module play one of the game's sounds, given by its SoundId
 void Play(int sound)
 {
-	// Purpose: let any module play one of the game's sounds, given by its SoundId.
-
 	// Ignore sounds that do not exist or failed to load
 	if (sound < 0 || sound >= SOUND_COUNT || !players[sound]) return;
 
@@ -70,24 +72,24 @@ void Play(int sound)
 	players[sound]->play();
 }
 
-// Routines
+// ---- Routines ----
+
+// Called once the node is in the tree, creates one player per sound so other modules can find this one by its group
 void OnReady(Caller* instance)
 {
-	// Purpose: called once the node is in the tree, creates one player per sound so other modules can find this one by its group.
-
-	// Other modules look for the node in the "audio" group
+	// 1. Other modules look for the node in the "audio" group
 	auto controller = GetSelf<Node>(instance);
 	controller->add_to_group("audio");
 
-	// The two buses the sounds play on
+	// 2. The two buses the sounds play on
 	FindBus("Effects");
 	FindBus("Interface");
 
-	// The file and loudness of each sound, in the same order as the SoundId values; the last ones belong to the menus
+	// 3. The file and loudness of each sound, in the same order as the SoundId values; the last ones belong to the menus
 	const char* files[SOUND_COUNT] = { "jump", "land", "switch", "blocked", "lever", "button", "door", "plate", "turn", "death", "exit", "crate_land", "ui_move", "ui_confirm", "ui_back" };
 	const float volumes[SOUND_COUNT] = { -8.0f, -10.0f, -6.0f, -6.0f, -4.0f, -4.0f, -6.0f, -6.0f, -5.0f, -3.0f, -4.0f, -8.0f, -14.0f, -10.0f, -12.0f };
 
-	// Make a player for each, a few copies of a sound may overlap
+	// 4. Make a player for each, a few copies of a sound may overlap
 	for (int sound = 0; sound < SOUND_COUNT; sound++)
 	{
 		Ref<AudioStream> stream = ResourceLoader::get_singleton()->load(String("res://audio/") + files[sound] + ".wav");
@@ -102,10 +104,10 @@ void OnReady(Caller* instance)
 		players[sound] = player;
 	}
 }
+
+// Called when the node leaves the scene tree, drops the players, which are freed with it
 void OnDestroy(Caller* instance)
 {
-	// Purpose: called when the node leaves the scene tree, drops the players, which are freed with it.
-
 	// Forget them so nothing plays a freed node
 	for (int sound = 0; sound < SOUND_COUNT; sound++) players[sound] = nullptr;
 }

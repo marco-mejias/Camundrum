@@ -1,9 +1,12 @@
 
-/* Camundrum - Shared Game Types */
+/* Camundrum - Shared Game Types
+ * Enums and constants shared by every script: views, deaths, collision layers and sounds.
+ */
 
 #pragma once
 
-// View Modes
+// ---- View Modes ----
+
 enum ViewMode
 {
 	VIEW_SIDE = 0,
@@ -12,7 +15,8 @@ enum ViewMode
 	VIEW_COUNT = 3
 };
 
-// Death Causes
+// ---- Death Causes ----
+
 enum DeathCause
 {
 	DEATH_FALL = 0,
@@ -20,7 +24,8 @@ enum DeathCause
 	DEATH_HOLE = 2
 };
 
-// Collision Layers
+// ---- Collision Layers ----
+
 enum CollisionLayer
 {
 	LAYER_WORLD = 1,
@@ -51,10 +56,9 @@ enum SoundId
 };
 
 // The colour of each view, shared by the view bar, view blocks and view flags
+// Give the colour that stands for a view: blue for side, orange for top, teal for iso, a warm white for any view
 inline void ViewColor(int view, float& r, float& g, float& b)
 {
-	// Purpose: give the colour that stands for a view: blue for side, orange for top, teal for iso, a warm white for any view.
-
 	// One colour per view
 	if (view == VIEW_SIDE) { r = 0.55f; g = 0.68f; b = 1.0f; return; }
 	if (view == VIEW_TOP) { r = 1.0f; g = 0.72f; b = 0.42f; return; }

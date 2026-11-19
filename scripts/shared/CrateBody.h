@@ -1,4 +1,6 @@
-/* Camundrum - Shared Crate Body */
+/* Camundrum - Shared Crate Body
+ * The body shared by crates and robots: falling, rivers, fans, holes, rows of crates and riders.
+ */
 
 #pragma once
 
@@ -28,19 +30,19 @@ namespace CrateBody
 {
 using namespace godot;
 
-// Rows
+// ---- Rows ----
+
+// Measure the box a crate fills in the world right now
 inline bool Box(Node* crate, AABB& box)
 {
-	// Purpose: measure the box a crate fills in the world right now.
-
 	// Its collision box, as placed in the world
 	return ShapeWorldBox((CollisionShape3D*)crate->get_node_or_null("Collision"), 1.0f, box);
 }
+
+// Find the crate touching this one straight ahead along a push, which the push moves too, or nothing
+// Robots are never moved this way, they drive themselves and stand in the way like a wall.
 inline CharacterBody3D* NextInRow(CharacterBody3D* crate, const Vector3& heading, bool flat, const std::vector<CharacterBody3D*>& row)
 {
-	// Purpose: find the crate touching this one straight ahead along a push, which the push moves too, or nothing.
-	// Robots are never moved this way, they drive themselves and stand in the way like a wall.
-
 	// Where this crate is, and along which axis it is pushed
 	AABB own;
 	if (!Box(crate, own)) return nullptr;
@@ -83,10 +85,10 @@ inline CharacterBody3D* NextInRow(CharacterBody3D* crate, const Vector3& heading
 	}
 	return nullptr;
 }
+
+// List the player and the crates standing on top of a body, which travel with it when it drives itself
 inline void FindRiders(CharacterBody3D* carrier, bool flat, std::vector<CharacterBody3D*>& riders)
 {
-	// Purpose: list the player and the crates standing on top of a body, which travel with it when it drives itself.
-
 	// The top face of the carrier
 	AABB own;
 	if (!Box(carrier, own)) return;
@@ -113,13 +115,13 @@ inline void FindRiders(CharacterBody3D* carrier, bool flat, std::vector<Characte
 		}
 	}
 }
+
+// Move a crate and every crate lined up in front of it as one block, in this same frame, and carry whoever rides on the leader
+// Each crate is tested against the world with the others of the row left out, and the whole row moves as far as the most blocked one allows.
+// Returns how far the row really went.
 inline float MoveRow(CharacterBody3D* leader, const Vector3& motion, bool flat, const std::vector<CharacterBody3D*>& riders)
 {
-	// Purpose: move a crate and every crate lined up in front of it as one block, in this same frame, and carry whoever rides on the leader.
-	// Each crate is tested against the world with the others of the row left out, and the whole row moves as far as the most blocked one allows.
-	// Returns how far the row really went.
-
-	// Line up the crates touching one after the other along the push
+	// 1. Line up the crates touching one after the other along the push
 	float length = motion.length();
 	if (length < 0.00001f) return 0.0f;
 	Vector3 heading = motion / length;
@@ -132,13 +134,13 @@ inline float MoveRow(CharacterBody3D* leader, const Vector3& motion, bool flat, 
 		row.push_back(next);
 	}
 
-	// The crates of the row and the riders do not stop each other while they move together
+	// 2. The crates of the row and the riders do not stop each other while they move together
 	std::vector<CharacterBody3D*> group = row;
 	for (CharacterBody3D* rider : riders) group.push_back(rider);
 	for (size_t first = 0; first < group.size(); first++)
 		for (size_t second = first + 1; second < group.size(); second++) group[first]->add_collision_exception_with(group[second]);
 
-	// The row goes as far as its most blocked crate can
+	// 3. The row goes as far as its most blocked crate can
 	float travel = length;
 	for (CharacterBody3D* member : row)
 	{
@@ -150,24 +152,24 @@ inline float MoveRow(CharacterBody3D* leader, const Vector3& motion, bool flat, 
 		}
 	}
 
-	// Move them all by that much, the riders along with them as far as they can go
+	// 4. Move them all by that much, the riders along with them as far as they can go
 	if (travel > 0.0001f)
 	{
 		for (CharacterBody3D* member : row) member->move_and_collide(heading * travel);
 		for (CharacterBody3D* rider : riders) rider->move_and_collide(heading * travel);
 	}
 
-	// Let them collide with each other again
+	// 5. Let them collide with each other again
 	for (size_t first = 0; first < group.size(); first++)
 		for (size_t second = first + 1; second < group.size(); second++) group[first]->remove_collision_exception_with(group[second]);
 	return travel;
 }
 
-// Modes
+// ---- Modes ----
+
+// Configure the crate for the current view, so the right physics rules apply to it
 inline void ApplyMode(CharacterBody3D* crate)
 {
-	// Purpose: configure the crate for the current view, so the right physics rules apply to it.
-
 	// Top view has no floor to rest on, so the crate floats there and sits on the ground otherwise
 	bool top = (int)crate->get_meta("view", VIEW_SIDE) == VIEW_TOP;
 	crate->set_motion_mode(top ? CharacterBody3D::MOTION_MODE_FLOATING : CharacterBody3D::MOTION_MODE_GROUNDED);
@@ -178,18 +180,18 @@ inline void ApplyMode(CharacterBody3D* crate)
 	else crate->set_collision_mask(top ? (LAYER_WORLD | LAYER_BOARD_BOUNDS) : LAYER_WORLD);
 	crate->set_collision_layer(raised ? (LAYER_ACTORS | LAYER_RAISED) : (LAYER_WORLD | LAYER_ACTORS));
 }
+
+// Forget the push and the river current received for this frame
 inline void ClearForces(CharacterBody3D* crate)
 {
-	// Purpose: forget the push and the river current received for this frame.
-
 	// Drop both
 	crate->set_meta("push", Vector3(0.0f, 0.0f, 0.0f));
 	crate->set_meta("flow", Vector3(0.0f, 0.0f, 0.0f));
 }
+
+// Take the crate out of the level or bring it back
 inline void SetBroken(CharacterBody3D* crate, bool broken)
 {
-	// Purpose: take the crate out of the level or bring it back.
-
 	// Remember the state and stop any movement
 	crate->set_meta("broken", broken);
 	crate->set_meta("fall", 0.0);
@@ -203,21 +205,21 @@ inline void SetBroken(CharacterBody3D* crate, bool broken)
 	if (shape) shape->set_deferred("disabled", broken);
 }
 
-// Raised in top
+// ---- Raised in top ----
+
+// Let a fan raise the crate in top view, so it can be pushed up onto walls
 inline void SetRaised(CharacterBody3D* crate, int raised)
 {
-	// Purpose: let a fan raise the crate in top view, so it can be pushed up onto walls.
-
 	// Only in top, and only when it changes
 	if ((int)crate->get_meta("view", VIEW_SIDE) != VIEW_TOP || (bool)crate->get_meta("raised", false) == (raised != 0)) return;
 	crate->set_meta("raised", raised != 0);
 	crate->set_meta("air_left", 0.3);
 	ApplyMode(crate);
 }
+
+// Blow the crate off the level in side view: tossed up a little, in front of everything, it falls through it all and is lost when out of the level
 inline void DropIntoVoid(CharacterBody3D* crate)
 {
-	// Purpose: blow the crate off the level in side view: tossed up a little, in front of everything, it falls through it all and is lost when out of the level.
-
 	// Only once
 	if ((bool)crate->get_meta("broken", false) || (bool)crate->get_meta("dropping", false)) return;
 	crate->set_meta("dropping", true);
@@ -230,10 +232,10 @@ inline void DropIntoVoid(CharacterBody3D* crate)
 	crate->set_global_position(position);
 	crate->set_meta("fall", 4.0);
 }
+
+// Draw a crate raised in top: it comes forward towards the camera and its shadow slips off to the side; coming down is quick
 inline void AnimateRaise(CharacterBody3D* crate, double delta)
 {
-	// Purpose: draw a crate raised in top: it comes forward towards the camera and its shadow slips off to the side; coming down is quick.
-
 	// Ease towards up or down
 	bool up = (int)crate->get_meta("view", VIEW_SIDE) == VIEW_TOP && (bool)crate->get_meta("raised", false);
 	double lift = crate->get_meta("lift", 0.0);
@@ -250,11 +252,11 @@ inline void AnimateRaise(CharacterBody3D* crate, double delta)
 	ShowRaiseShadow(crate, (float)lift, size.x, size.y);
 }
 
-// Void
+// ---- Void ----
+
+// Start the crate sinking into the holes under it, after which it plugs them
 inline void StartSinking(CharacterBody3D* crate)
 {
-	// Purpose: start the crate sinking into the holes under it, after which it plugs them.
-
 	// It stops blocking at once and is heard landing in the hole, which counts as floor from now on so nothing falls in behind it
 	crate->set_meta("sink", 0.0);
 	Node3D* hole = FillVoidUnder(crate);
@@ -272,10 +274,10 @@ inline void StartSinking(CharacterBody3D* crate)
 	if (shape) shape->set_deferred("disabled", true);
 	PlaySound(crate, SOUND_CRATE_LAND);
 }
+
+// Shrink the crate away into the void over a third of a second, then plug the holes it covered
 inline void AnimateSinking(CharacterBody3D* crate, double delta)
 {
-	// Purpose: shrink the crate away into the void over a third of a second, then plug the holes it covered.
-
 	// Advance and shrink
 	double sink = (double)crate->get_meta("sink", -1.0) + delta / 0.3;
 	crate->set_meta("sink", sink);
@@ -290,11 +292,11 @@ inline void AnimateSinking(CharacterBody3D* crate, double delta)
 	SetBroken(crate, true);
 }
 
-// Commands
+// ---- Commands ----
+
+// Let a river segment or a fan carry the crate this frame, combining the currents of every one it touches
 inline void SetCurrent(CharacterBody3D* crate, double x, double y, double z)
 {
-	// Purpose: let a river segment or a fan carry the crate this frame, combining the currents of every one it touches.
-
 	// Keep, on each axis, whichever push is stronger, so where two stretches meet the crate feels both
 	Vector3 incoming = Vector3(x, y, z);
 	Vector3 stored = crate->get_meta("flow", Vector3(0.0f, 0.0f, 0.0f));
@@ -307,27 +309,27 @@ inline void SetCurrent(CharacterBody3D* crate, double x, double y, double z)
 	crate->set_meta("flow", stored);
 }
 
-// Contract
+// ---- Contract ----
+
+// Give the crate the physics rules of the new view
 inline void ViewChanged(CharacterBody3D* crate, int view)
 {
-	// Purpose: give the crate the physics rules of the new view.
-
-	// Top view has no momentum, so a fall in progress is dropped when entering or leaving it
+	// 1. Top view has no momentum, so a fall in progress is dropped when entering or leaving it
 	int old_view = crate->get_meta("view", VIEW_SIDE);
 
-	// Leaving top while up on something: in side it hangs in front of it with nothing below and is lost; in iso the depth module placed it against it
+	// 2. Leaving top while up on something: in side it hangs in front of it with nothing below and is lost; in iso the depth module placed it against it
 	if ((bool)crate->get_meta("raised", false) && old_view == VIEW_TOP && view == VIEW_SIDE && OverRaisedGround(crate)) DropIntoVoid(crate);
 	if (view != VIEW_TOP) crate->set_meta("raised", false);
 	if ((view == VIEW_TOP) != (old_view == VIEW_TOP)) crate->set_meta("fall", 0.0);
 
-	// Store the view and configure the body for it
+	// 3. Store the view and configure the body for it
 	crate->set_meta("view", view);
 	ApplyMode(crate);
 }
+
+// Return the crate to its starting state when the level restarts
 inline void Reset(CharacterBody3D* crate)
 {
-	// Purpose: return the crate to its starting state when the level restarts.
-
 	// Bring the crate back, its position is restored by the DepthController
 	SetBroken(crate, false);
 	crate->set_meta("frozen", false);
@@ -339,19 +341,19 @@ inline void Reset(CharacterBody3D* crate)
 	Node3D* mesh = (Node3D*)crate->get_node_or_null("Mesh");
 	if (mesh) mesh->set_scale(Vector3(1.0f, 1.0f, 1.0f));
 }
+
+// Prepare the crate once it is in the tree
 inline void Ready(CharacterBody3D* crate, double gravity, double max_fall, double fall_limit)
 {
-	// Purpose: prepare the crate once it is in the tree.
-
-	// Keep the settings on the node, where every function can read them safely
+	// 1. Keep the settings on the node, where every function can read them safely
 	crate->set_meta("gravity", gravity);
 	crate->set_meta("max_fall", max_fall);
 	crate->set_meta("fall_limit", fall_limit);
 
-	// A robot carrying the crate moves it itself, so Godot must not add the floor's speed on top
+	// 2. A robot carrying the crate moves it itself, so Godot must not add the floor's speed on top
 	crate->set_platform_floor_layers(0);
 
-	// Start whole, still, in the view the game normally begins in
+	// 3. Start whole, still, in the view the game normally begins in
 	crate->set_meta("view", VIEW_SIDE);
 	crate->set_meta("frozen", false);
 	crate->set_meta("sink", -1.0);
@@ -359,19 +361,19 @@ inline void Ready(CharacterBody3D* crate, double gravity, double max_fall, doubl
 	ApplyMode(crate);
 }
 
-// Routine
+// ---- Routine ----
+
+// Move the crate for one physics frame with its push, its own drive, the river and gravity
+// The drive is how a robot moves itself; it pushes crates ahead and carries riders. Returns the share of the drive the crate really managed this frame, 1 when it had none to do.
 inline float Step(CharacterBody3D* crate, double delta, const Vector3& drive)
 {
-	// Purpose: move the crate for one physics frame with its push, its own drive, the river and gravity.
-	// The drive is how a robot moves itself; it pushes crates ahead and carries riders. Returns the share of the drive the crate really managed this frame, 1 when it had none to do.
-
-	// A broken or frozen crate does nothing, apart from keeping its shadow in place
+	// 1. A broken or frozen crate does nothing, apart from keeping its shadow in place
 	int view = crate->get_meta("view", VIEW_SIDE);
 	UpdateDropShadow(crate, view == VIEW_ISO && !(bool)crate->get_meta("broken", false));
 	if ((bool)crate->get_meta("broken", false)) return 1.0f;
 	AnimateRaise(crate, delta);
 
-	// Blown off the level in side, the crate only falls, through everything, until it is out of the level
+	// 2. Blown off the level in side, the crate only falls, through everything, until it is out of the level
 	if ((bool)crate->get_meta("dropping", false))
 	{
 		double falling = (double)crate->get_meta("fall", 0.0) - (double)crate->get_meta("gravity", 35.0) * delta;
@@ -382,7 +384,7 @@ inline float Step(CharacterBody3D* crate, double delta, const Vector3& drive)
 		return 1.0f;
 	}
 
-	// A crate sinking into the void finishes doing so, even while the world waits
+	// 3. A crate sinking into the void finishes doing so, even while the world waits
 	if ((double)crate->get_meta("sink", -1.0) >= 0.0)
 	{
 		AnimateSinking(crate, delta);
@@ -393,13 +395,13 @@ inline float Step(CharacterBody3D* crate, double delta, const Vector3& drive)
 	Vector3 flow = crate->get_meta("flow", Vector3(0.0f, 0.0f, 0.0f));
 	double fall = crate->get_meta("fall", 0.0);
 
-	// The push moves the crate, and any crates lined up in front of it, as one block, only along the axes the view allows
+	// 4. The push moves the crate, and any crates lined up in front of it, as one block, only along the axes the view allows
 	Vector3 before = crate->get_global_position();
 	std::vector<CharacterBody3D*> no_riders;
 	Vector3 shove = Vector3(push.x, (view == VIEW_TOP) ? push.y : 0.0f, (view == VIEW_ISO) ? push.z : 0.0f);
 	if (shove.length() > 0.01f) MoveRow(crate, shove * (float)delta, view != VIEW_ISO, no_riders);
 
-	// Its own drive moves it the same way, carrying whoever stands on it; in top nothing stands on anything
+	// 5. Its own drive moves it the same way, carrying whoever stands on it; in top nothing stands on anything
 	float managed = 1.0f;
 	Vector3 own = Vector3(drive.x, (view == VIEW_TOP) ? drive.y : 0.0f, (view == VIEW_ISO) ? drive.z : 0.0f);
 	if (own.length() > 0.01f)
@@ -410,7 +412,7 @@ inline float Step(CharacterBody3D* crate, double delta, const Vector3& drive)
 		managed = MoveRow(crate, own * (float)delta, view != VIEW_ISO, riders) / wanted;
 	}
 
-	// Across the ground the crate otherwise only moves while a river carries it; thrown off an edge by the current it keeps drifting while it falls
+	// 6. Across the ground the crate otherwise only moves while a river carries it; thrown off an edge by the current it keeps drifting while it falls
 	Vector3 drift = crate->get_meta("drift", Vector3(0.0f, 0.0f, 0.0f));
 	Vector3 carried = Vector3(flow.x, 0.0f, (view == VIEW_ISO) ? flow.z : 0.0f);
 	if (carried.length() > 0.01f) drift = carried;
@@ -419,7 +421,7 @@ inline float Step(CharacterBody3D* crate, double delta, const Vector3& drive)
 	crate->set_meta("drift", drift);
 	Vector3 velocity = Vector3(drift.x, 0.0f, 0.0f);
 
-	// Top view has no gravity, the push and the board decide everything
+	// 7. Top view has no gravity, the push and the board decide everything
 	if (view == VIEW_TOP) fall = 0.0;
 	else
 	{
@@ -435,21 +437,21 @@ inline float Step(CharacterBody3D* crate, double delta, const Vector3& drive)
 	}
 	crate->set_meta("fall", fall);
 
-	// Fall and drift with the river, colliding with everything
+	// 8. Fall and drift with the river, colliding with everything
 	crate->set_velocity(velocity);
 	crate->move_and_slide();
 
-	// Forget this frame's push and current
+	// 9. Forget this frame's push and current
 	ClearForces(crate);
 
-	// Landing after a real fall is heard
+	// 10. Landing after a real fall is heard
 	if (view != VIEW_TOP && fall < -6.0 && crate->is_on_floor()) PlaySound(crate, SOUND_CRATE_LAND);
 
-	// Side and top keep the crate on its plane, done here rather than with an axis lock so the depth module can still move it
+	// 11. Side and top keep the crate on its plane, done here rather than with an axis lock so the depth module can still move it
 	Vector3 after = crate->get_global_position();
 	if (view != VIEW_ISO && after.z != before.z) crate->set_global_position(Vector3(after.x, after.y, before.z));
 
-	// Raised in top, the crate stays up for a moment only after a fan's jump; pushed off a wall it comes straight down
+	// 12. Raised in top, the crate stays up for a moment only after a fan's jump; pushed off a wall it comes straight down
 	bool raised = view == VIEW_TOP && (bool)crate->get_meta("raised", false);
 	bool lands = false;
 	if (raised)
@@ -468,10 +470,10 @@ inline float Step(CharacterBody3D* crate, double delta, const Vector3& drive)
 		ApplyMode(crate);
 	}
 
-	// In top the board is the floor: a crate whose whole base is over open holes has nothing under it and sinks into them, unless it is up on something
+	// 13. In top the board is the floor: a crate whose whole base is over open holes has nothing under it and sinks into them, unless it is up on something
 	if (view == VIEW_TOP && !(bool)crate->get_meta("raised", false) && FootprintOverVoid(crate)) StartSinking(crate);
 
-	// A crate that falls out of the level is lost until the next restart
+	// 14. A crate that falls out of the level is lost until the next restart
 	if (after.y < (double)crate->get_meta("fall_limit", -12.0)) SetBroken(crate, true);
 	return managed;
 }

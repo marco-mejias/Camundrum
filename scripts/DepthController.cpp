@@ -1,5 +1,7 @@
 
-/* Camundrum - Depth Controller */
+/* Camundrum - Depth Controller
+ * The heart of the three views: flattens depth in side and top, restores it in iso, and checks every switch before it happens.
+ */
 
 // Godot SDK
 #include <Godot/godot.hpp>
@@ -30,7 +32,8 @@
 using namespace godot;
 using namespace jenova::sdk;
 
-// Struct of elements in the scene
+// ---- Struct of elements in the scene ----
+
 struct DepthEntry
 {
 	Node3D* node = nullptr;
@@ -44,7 +47,8 @@ struct DepthEntry
 	bool is_lifted = false;
 };
 
-// Vector of the elements
+// ---- Vector of the elements ----
+
 static std::vector<DepthEntry> entries;
 
 // Something glowing red because it is in the way, and how long it still glows
@@ -59,49 +63,48 @@ static std::vector<BlinkEntry> blinks;
 static int checked_view = -1;
 
 // Helpers, kept outside the script block because Jenova cannot read their types inside it
+// Find the box that makes an element solid, if it has one that is switched on
 static CollisionShape3D* SolidShape(Node* node)
 {
-	// Purpose: find the box that makes an element solid, if it has one that is switched on.
-
-	// Blocks, doors, crates and the player carry it as Collision, spikes keep it on their Solid child
+	// 1. Blocks, doors, crates and the player carry it as Collision, spikes keep it on their Solid child
 	CollisionShape3D* shape = (CollisionShape3D*)node->get_node_or_null("Collision");
 	if (!shape) shape = (CollisionShape3D*)node->get_node_or_null("Solid/Collision");
 	if (!shape) return nullptr;
 
-	// A view block is solid only in its own view; the check may be about a view not entered yet, so its switch is not trusted
+	// 2. A view block is solid only in its own view; the check may be about a view not entered yet, so its switch is not trusted
 	if (node->has_meta("solid_view")) return ((int)node->get_meta("solid_view") == checked_view) ? shape : nullptr;
 	if (shape->is_disabled()) return nullptr;
 
-	// Areas such as plates and exits have a trigger, not a solid box
+	// 3. Areas such as plates and exits have a trigger, not a solid box
 	if (node->is_class("Area3D") && !node->get_node_or_null("Solid")) return nullptr;
 	return shape;
 }
+
+// Work out the box an element fills in the world right now, slightly shrunk if asked, so touching does not count
 static bool SolidBox(Node* node, float shrink, AABB& box)
 {
-	// Purpose: work out the box an element fills in the world right now, slightly shrunk if asked, so touching does not count.
-
 	// Measure its solid box, if it has one switched on
 	return ShapeWorldBox(SolidShape(node), shrink, box);
 }
+
+// Add the physics body of a tracked element to a list, so a physics question can leave it out
 static void AddSolidRid(Node* node, TypedArray<RID>& rids)
 {
-	// Purpose: add the physics body of a tracked element to a list, so a physics question can leave it out.
-
 	// The body is the element itself, or the Solid child of spikes
 	if (node->is_class("PhysicsBody3D")) rids.push_back(((PhysicsBody3D*)node)->get_rid());
 	Node* solid = node->get_node_or_null("Solid");
 	if (solid && solid->is_class("PhysicsBody3D")) rids.push_back(((PhysicsBody3D*)solid)->get_rid());
 }
+
+// Find what solid thing a fixed piece, such as a depth lift, is inside where it stands now, leaving out the pieces moving with it
 static Node* PieceBlockerAt(int index, const std::vector<int>& moving)
 {
-	// Purpose: find what solid thing a fixed piece, such as a depth lift, is inside where it stands now, leaving out the pieces moving with it.
-
-	// Measure the piece, slightly shrunk so touching does not count
+	// 1. Measure the piece, slightly shrunk so touching does not count
 	Node3D* piece = entries[index].node;
 	AABB own;
 	if (!SolidBox(piece, 0.9f, own)) return nullptr;
 
-	// Compare it with every other tracked solid piece that is not moving along
+	// 2. Compare it with every other tracked solid piece that is not moving along
 	TypedArray<RID> tracked;
 	for (int other = 0; other < (int)entries.size(); other++)
 	{
@@ -114,7 +117,7 @@ static Node* PieceBlockerAt(int index, const std::vector<int>& moving)
 		if (SolidBox(node, 1.0f, box) && own.intersects(box)) return node;
 	}
 
-	// Pieces solid in only one view that are not tracked, such as a fan's wall of air, never block a lift: it is judged as in iso
+	// 3. Pieces solid in only one view that are not tracked, such as a fan's wall of air, never block a lift: it is judged as in iso
 	TypedArray<Node> view_solids = piece->get_tree()->get_nodes_in_group("view_solid");
 	for (int other = 0; other < view_solids.size(); other++)
 	{
@@ -122,7 +125,7 @@ static Node* PieceBlockerAt(int index, const std::vector<int>& moving)
 		if (object) AddSolidRid((Node*)object, tracked);
 	}
 
-	// Ask the physics engine about everything else, such as the board, which never moves
+	// 4. Ask the physics engine about everything else, such as the board, which never moves
 	CollisionShape3D* shape_node = SolidShape(piece);
 	Ref<PhysicsShapeQueryParameters3D> query;
 	query.instantiate();
@@ -138,10 +141,10 @@ static Node* PieceBlockerAt(int index, const std::vector<int>& moving)
 	Object* collider = hit["collider"];
 	return (Node*)collider;
 }
+
+// Make something glow red for half a second, to show what is in the way
 static void StartBlink(Node* node)
 {
-	// Purpose: make something glow red for half a second, to show what is in the way.
-
 	// Restart the glow if this node is already glowing
 	if (!node) return;
 	for (BlinkEntry& blink : blinks)
@@ -159,11 +162,11 @@ static void StartBlink(Node* node)
 	blink.left = 0.5;
 	blinks.push_back(blink);
 }
+
+// Draw a coloured layer over every mesh of a piece, or take it away
+// The shadow disc of the player and crates, and the player's x-ray dots, are left alone.
 static void SetLook(Node* node, bool overlay, const Color& color)
 {
-	// Purpose: draw a coloured layer over every mesh of a piece, or take it away.
-	// The shadow disc of the player and crates, and the player's x-ray dots, are left alone.
-
 	// Apply it to this node if it is a mesh
 	if (node->is_class("GeometryInstance3D") && String(node->get_name()) != "Shadow" && String(node->get_name()) != "XRay")
 	{
@@ -188,10 +191,10 @@ static void SetLook(Node* node, bool overlay, const Color& color)
 	// And to every child, so pieces made of several meshes change as a whole
 	for (int index = 0; index < node->get_child_count(); index++) SetLook(node->get_child(index), overlay, color);
 }
+
+// Advance every warning glow, pulsing red over whatever is in the way and clearing it at the end
 static void UpdateBlinks(double delta)
 {
-	// Purpose: advance every warning glow, pulsing red over whatever is in the way and clearing it at the end.
-
 	// Go through the list from the end, so finished glows can be removed on the way
 	for (int index = (int)blinks.size() - 1; index >= 0; index--)
 	{
@@ -220,46 +223,46 @@ JENOVA_PROPERTY(double, flat_front_z, 4.5)
 JENOVA_PROPERTY(double, transition_time, 0.35)
 
 // State
-Node* controller = nullptr;
-bool is_flattened = false;
-bool is_moving = false;
-double progress = 1.0;
-double default_front_z = 4.5;
-double level_front_z = 4.5;
-double move_time = 0.35;
-int current_view = VIEW_SIDE;
+Node* controller = nullptr; // This node, it emits move_finished
+bool is_flattened = false; // True in side and top, where everything sits on the front edge
+bool is_moving = false; // True while pieces slide between flat and real depth
+double progress = 1.0; // 0 to 1 along that slide
+double default_front_z = 4.5; // Front edge used when a level does not set flat_front_z
+double level_front_z = 4.5; // Front edge of the current level
+double move_time = 0.35; // Length of the slide, matches the camera move
+int current_view = VIEW_SIDE; // The view the layout was last checked for
 
-// Measuring
+// ---- Measuring ----
+
+// Measure how deep an element is right now, taking its scale and any turn into account
 double DepthExtent(int index)
 {
-	// Purpose: measure how deep an element is right now, taking its scale and any turn into account.
-
 	// Add up how much each of its own axes reaches along the world's depth axis
 	DepthEntry& entry = entries[index];
 	Vector3 depth_row = entry.node->get_global_transform().basis.rows[2];
 	double reach = (depth_row.x < 0 ? -depth_row.x : depth_row.x) + (depth_row.y < 0 ? -depth_row.y : depth_row.y) + (depth_row.z < 0 ? -depth_row.z : depth_row.z);
 	return entry.depth_units * reach;
 }
+
+// The depth an element takes when the level is flat, with its front face lined up with the front edge
 double FlatDepth(int index)
 {
-	// Purpose: the depth an element takes when the level is flat, with its front face lined up with the front edge.
-
 	// Half its own depth behind the front edge
 	return level_front_z - DepthExtent(index) * 0.5;
 }
+
+// The collision layers a moving element feels in a view, the edges of the board only count in top view
 int MaskForView(int view)
 {
-	// Purpose: the collision layers a moving element feels in a view, the edges of the board only count in top view.
-
 	// The world always, the board edges only in top view
 	return (view == VIEW_TOP) ? (LAYER_WORLD | LAYER_BOARD_BOUNDS) : LAYER_WORLD;
 }
+
+// Find what solid thing a moving element is inside where it stands now, or nothing
+// Tracked pieces are compared box against box, because the physics engine only sees where they were moved on the next frame.
 Node* FindBlocker(int index, int view)
 {
-	// Purpose: find what solid thing a moving element is inside where it stands now, or nothing.
-	// Tracked pieces are compared box against box, because the physics engine only sees where they were moved on the next frame.
-
-	// Measure the element, slightly shrunk so touching does not count, in the view being checked
+	// 1. Measure the element, slightly shrunk so touching does not count, in the view being checked
 	checked_view = view;
 	DepthEntry& entry = entries[index];
 	CharacterBody3D* body = (CharacterBody3D*)entry.node;
@@ -267,7 +270,7 @@ Node* FindBlocker(int index, int view)
 	AABB own;
 	if (!SolidBox(body, 0.9f, own)) return nullptr;
 
-	// Compare it with every other tracked piece that is solid
+	// 2. Compare it with every other tracked piece that is solid
 	TypedArray<RID> tracked;
 	for (int other = 0; other < (int)entries.size(); other++)
 	{
@@ -278,7 +281,7 @@ Node* FindBlocker(int index, int view)
 		if (SolidBox(node, 1.0f, box) && own.intersects(box)) return node;
 	}
 
-	// Pieces solid in only one view that the depth module does not track, such as a fan's wall of air, are judged by box too
+	// 3. Pieces solid in only one view that the depth module does not track, such as a fan's wall of air, are judged by box too
 	// They are left out of the physics question below, which only knows whether they are solid in the view shown now
 	TypedArray<Node> view_solids = controller->get_tree()->get_nodes_in_group("view_solid");
 	for (int other = 0; other < view_solids.size(); other++)
@@ -291,7 +294,7 @@ Node* FindBlocker(int index, int view)
 		if (node->is_visible_in_tree() && SolidBox(node, 1.0f, box) && own.intersects(box)) return node->get_parent();
 	}
 
-	// Ask the physics engine about everything else, such as the board and its edges, which never move
+	// 4. Ask the physics engine about everything else, such as the board and its edges, which never move
 	CollisionShape3D* shape_node = SolidShape(body);
 	Ref<PhysicsShapeQueryParameters3D> query;
 	query.instantiate();
@@ -307,11 +310,11 @@ Node* FindBlocker(int index, int view)
 	Object* collider = hit["collider"];
 	return (Node*)collider;
 }
+
+// Find the fixed solid piece that hides something that must stay in sight, such as a lever, or nothing
+// The flat views look straight along the depth axis, so only the overlap across the board counts.
 Node* FindCover(Node3D* piece)
 {
-	// Purpose: find the fixed solid piece that hides something that must stay in sight, such as a lever, or nothing.
-	// The flat views look straight along the depth axis, so only the overlap across the board counts.
-
 	// The piece marks the part that must be seen with a switched off box called Footprint
 	if (!piece || !piece->is_visible_in_tree()) return nullptr;
 	AABB own;
@@ -332,10 +335,10 @@ Node* FindCover(Node3D* piece)
 	}
 	return nullptr;
 }
+
+// Tell whether every moving element is free where it stands now, making whatever is in the way blink
 bool CheckLayout(int view)
 {
-	// Purpose: tell whether every moving element is free where it stands now, making whatever is in the way blink.
-
 	// Look at each moving element that is still in the level, judging view blocks by this view
 	checked_view = view;
 	bool free = true;
@@ -372,11 +375,11 @@ bool CheckLayout(int view)
 	return free;
 }
 
-// Moving
+// ---- Moving ----
+
+// Put every element somewhere between the depth it is leaving and the one it is going to, 0 is start and 1 is end
 void PlaceAll(double amount)
 {
-	// Purpose: put every element somewhere between the depth it is leaving and the one it is going to, 0 is start and 1 is end.
-
 	// Ease the amount so the move starts and ends gently, the same way the camera does
 	double eased = amount * amount * (3.0 - 2.0 * amount);
 
@@ -388,20 +391,20 @@ void PlaceAll(double amount)
 		entry.node->set_global_position(position);
 	}
 }
+
+// End a depth move, leaving every element exactly at its destination
 void FinishMove()
 {
-	// Purpose: end a depth move, leaving every element exactly at its destination.
-
 	// Place everything at the end of the move
 	PlaceAll(1.0);
 	is_moving = false;
 	progress = 1.0;
 
 }
+
+// Begin moving every element to its destination depth, and tell whether an animated move is now running
 bool StartMove(int instant)
 {
-	// Purpose: begin moving every element to its destination depth, and tell whether an animated move is now running.
-
 	// An instant move is finished on the spot
 	if (instant != 0 || move_time <= 0.0)
 	{
@@ -415,11 +418,11 @@ bool StartMove(int instant)
 	return true;
 }
 
-// Registering
+// ---- Registering ----
+
+// Add to the list every element marked with the depth group under a node, looking inside carriers too
 void RegisterBranch(Node* parent)
 {
-	// Purpose: add to the list every element marked with the depth group under a node, looking inside carriers too.
-
 	// Look at each direct child
 	for (int index = 0; index < parent->get_child_count(); index++)
 	{
@@ -442,64 +445,64 @@ void RegisterBranch(Node* parent)
 	}
 }
 
-// Rotations
+// ---- Rotations ----
+
+// Tell whether a moving element stands on a carrier, so a turn of the carrier takes it along
 bool IsRider(Node* carrier, int index, double axis)
 {
-	// Purpose: tell whether a moving element stands on a carrier, so a turn of the carrier takes it along.
-
-	// Only moving elements that are not part of the carrier itself can ride it
+	// 1. Only moving elements that are not part of the carrier itself can ride it
 	DepthEntry& entry = entries[index];
 	if (!entry.is_dynamic || carrier->is_ancestor_of(entry.node)) return false;
 
-	// Something on the board is only carried in top view, where the board is the floor
+	// 2. Something on the board is only carried in top view, where the board is the floor
 	if (axis > 0.5 && current_view != VIEW_TOP) return false;
 
-	// The carrier's deck is the box above it where riders stand
+	// 3. The carrier's deck is the box above it where riders stand
 	CollisionShape3D* deck = (CollisionShape3D*)carrier->get_node_or_null("Deck/Collision");
 	if (!deck) return false;
 	Ref<Shape3D> deck_shape = deck->get_shape();
 	if (deck_shape.is_null()) return false;
 	Vector3 half = ((Vector3)deck_shape->get("size")) * 0.5f;
 
-	// The rider is judged by its real depth, the one it has in iso
+	// 4. The rider is judged by its real depth, the one it has in iso
 	Vector3 point = entry.node->get_global_position();
 	if (is_flattened && axis < 0.5) point.z = entry.true_z;
 
-	// Inside the deck box, measured in the deck's own space
+	// 5. Inside the deck box, measured in the deck's own space
 	Vector3 local = deck->get_global_transform().affine_inverse().xform(point);
 	return (local.x >= -half.x && local.x <= half.x && local.y >= -half.y && local.y <= half.y && local.z >= -half.z && local.z <= half.z);
 }
 
-// Commands
+// ---- Commands ----
+
+// Let the GameManager tell this module which view is active
 void SetView(int view)
 {
-	// Purpose: let the GameManager tell this module which view is active.
-
 	// Remember it, it decides which collision layers count and who rides the board
 	current_view = view;
 }
+
+// Let the GameManager hand over a level, so every element marked with the depth group is tracked
 void RegisterLevel(Node* level)
 {
-	// Purpose: let the GameManager hand over a level, so every element marked with the depth group is tracked.
-
-	// Start from an empty list in the unflattened state
+	// 1. Start from an empty list in the unflattened state
 	entries.clear();
 	blinks.clear();
 	is_flattened = false;
 	is_moving = false;
 	if (!level) return;
 
-	// The level says where its front edge is, which is the plane every element is pushed to when flat
+	// 2. The level says where its front edge is, which is the plane every element is pushed to when flat
 	level_front_z = level->get_meta("flat_front_z", default_front_z);
 
-	// Walk the level and keep every element marked with the depth group
+	// 3. Walk the level and keep every element marked with the depth group
 	RegisterBranch(level);
 }
+
+// Give every body raised in top the depth right in front of the fixed piece it stands on, so in iso it is against that piece's front face
+// A raised body over nothing fixed, such as over a fan, keeps the depth it had.
 void PlaceRaisedBodies()
 {
-	// Purpose: give every body raised in top the depth right in front of the fixed piece it stands on, so in iso it is against that piece's front face.
-	// A raised body over nothing fixed, such as over a fan, keeps the depth it had.
-
 	// Look at each moving body that is up on something
 	for (int index = 0; index < (int)entries.size(); index++)
 	{
@@ -528,19 +531,19 @@ void PlaceRaisedBodies()
 		if (found) entry.true_z = front + DepthExtent(index) * 0.5 + 0.01;
 	}
 }
+
+// Let the GameManager ask whether a view can be entered, which is refused when it would leave a moving element inside something
+// Whatever is in the way blinks.
 bool CanSwitchTo(int view)
 {
-	// Purpose: let the GameManager ask whether a view can be entered, which is refused when it would leave a moving element inside something.
-	// Whatever is in the way blinks.
-
-	// A body raised by a fan in top goes to iso pressed against the front of what it stands on, keeping its height
+	// 1. A body raised by a fan in top goes to iso pressed against the front of what it stands on, keeping its height
 	if (view == VIEW_ISO && is_flattened) PlaceRaisedBodies();
 
-	// Remember where everything stands now
+	// 2. Remember where everything stands now
 	std::vector<Vector3> saved;
 	for (DepthEntry& entry : entries) saved.push_back(entry.node->get_global_position());
 
-	// Put everything where the new view would put it, flat at the front edge or back at its real depth
+	// 3. Put everything where the new view would put it, flat at the front edge or back at its real depth
 	bool to_flat = view != VIEW_ISO;
 	if (to_flat != is_flattened)
 	{
@@ -552,21 +555,21 @@ bool CanSwitchTo(int view)
 		}
 	}
 
-	// Check that layout, then put everything back
+	// 4. Check that layout, then put everything back
 	bool free = CheckLayout(view);
 	for (int index = 0; index < (int)entries.size(); index++) entries[index].node->set_global_position(saved[index]);
 	return free;
 }
+
+// Let the GameManager push every element to the front edge of the level, remembering the depth each one had
+// Returns whether an animated move started, so the caller knows to wait for the move_finished signal.
 bool Flatten(int instant)
 {
-	// Purpose: let the GameManager push every element to the front edge of the level, remembering the depth each one had.
-	// Returns whether an animated move started, so the caller knows to wait for the move_finished signal.
-
-	// Do nothing when the level is already flat or a move is still running
+	// 1. Do nothing when the level is already flat or a move is still running
 	if (is_flattened || is_moving) return false;
 	is_flattened = true;
 
-	// Store each element's current depth, and aim it at the flat depth
+	// 2. Store each element's current depth, and aim it at the flat depth
 	for (int index = 0; index < (int)entries.size(); index++)
 	{
 		DepthEntry& entry = entries[index];
@@ -576,35 +579,35 @@ bool Flatten(int instant)
 		entry.to_z = entry.flat_z;
 	}
 
-	// Carry the move out, at once or over time
+	// 3. Carry the move out, at once or over time
 	return StartMove(instant);
 }
+
+// Let the GameManager return every element to the depth it had before the level was flattened
+// Returns whether an animated move started, so the caller knows to wait for the move_finished signal.
 bool Restore(int instant)
 {
-	// Purpose: let the GameManager return every element to the depth it had before the level was flattened.
-	// Returns whether an animated move started, so the caller knows to wait for the move_finished signal.
-
-	// Do nothing when the level is not flat or a move is still running
+	// 1. Do nothing when the level is not flat or a move is still running
 	if (!is_flattened || is_moving) return false;
 	is_flattened = false;
 
-	// Aim each element at its remembered depth, it keeps wherever it moved to across the board
+	// 2. Aim each element at its remembered depth, it keeps wherever it moved to across the board
 	for (DepthEntry& entry : entries)
 	{
 		entry.from_z = entry.node->get_global_position().z;
 		entry.to_z = entry.true_z;
 	}
 
-	// Carry the move out, at once or over time
+	// 3. Carry the move out, at once or over time
 	return StartMove(instant);
 }
+
+// Let the GameManager ask whether a carrier can turn, and get it ready if so
+// The turn is tried on the spot and undone: if it would leave a moving element inside something it is refused and the obstacle blinks.
+// In a flat view the pieces and riders are lifted back to their real depth, because the turn happens in the real layout.
 bool PrepareRotation(Node* carrier)
 {
-	// Purpose: let the GameManager ask whether a carrier can turn, and get it ready if so.
-	// The turn is tried on the spot and undone: if it would leave a moving element inside something it is refused and the obstacle blinks.
-	// In a flat view the pieces and riders are lifted back to their real depth, because the turn happens in the real layout.
-
-	// Ask the carrier how far it wants to turn and around which axis, vertical or depth
+	// 1. Ask the carrier how far it wants to turn and around which axis, vertical or depth
 	Node3D* table = (Node3D*)carrier;
 	double degrees = carrier->call("PendingDelta");
 	double axis_value = carrier->call("TurnAxis");
@@ -613,19 +616,19 @@ bool PrepareRotation(Node* carrier)
 	Vector3 pivot = table->get_global_position();
 	bool lift = is_flattened && axis_value < 0.5;
 
-	// Sort the elements into pieces of the carrier, riders standing on it, and the rest
+	// 2. Sort the elements into pieces of the carrier, riders standing on it, and the rest
 	std::vector<int> moving;
 	for (int index = 0; index < (int)entries.size(); index++)
 	{
 		if (table->is_ancestor_of(entries[index].node) || IsRider(carrier, index, axis_value)) moving.push_back(index);
 	}
 
-	// Remember the carrier's turn and where everything stands now
+	// 3. Remember the carrier's turn and where everything stands now
 	Vector3 saved_rotation = table->get_rotation();
 	std::vector<Vector3> saved;
 	for (DepthEntry& entry : entries) saved.push_back(entry.node->get_global_position());
 
-	// Turn the carrier, and place its pieces and riders where the turn takes them in the real layout
+	// 4. Turn the carrier, and place its pieces and riders where the turn takes them in the real layout
 	table->rotate(axis, radians);
 	for (int index : moving)
 	{
@@ -638,13 +641,13 @@ bool PrepareRotation(Node* carrier)
 		entries[index].node->set_global_position(end);
 	}
 
-	// Check that layout, then undo the turn and put everything back
+	// 5. Check that layout, then undo the turn and put everything back
 	bool free = CheckLayout(current_view);
 	table->set_rotation(saved_rotation);
 	for (int index = 0; index < (int)entries.size(); index++) entries[index].node->set_global_position(saved[index]);
 	if (!free) return false;
 
-	// The turn may go ahead, in a flat view lift the pieces and riders to their real depth first
+	// 6. The turn may go ahead, in a flat view lift the pieces and riders to their real depth first
 	if (lift)
 	{
 		for (int index : moving)
@@ -657,22 +660,22 @@ bool PrepareRotation(Node* carrier)
 	}
 	return true;
 }
+
+// Let the GameManager ask whether the floors can swap, and get the pieces ready if so
+// The swap is tried on the spot and undone: if it would leave a moving element inside something it is refused and the obstacle blinks.
+// In a flat view the pieces are lifted back to their real depth first, because the swap mirrors the real layout.
 bool PrepareSwap(Node* swapper)
 {
-	// Purpose: let the GameManager ask whether the floors can swap, and get the pieces ready if so.
-	// The swap is tried on the spot and undone: if it would leave a moving element inside something it is refused and the obstacle blinks.
-	// In a flat view the pieces are lifted back to their real depth first, because the swap mirrors the real layout.
-
-	// The hinge is the line where the ground meets the board
+	// 1. The hinge is the line where the ground meets the board
 	Node3D* hinge = (Node3D*)swapper;
 	float hinge_y = hinge->get_global_position().y;
 	float hinge_z = hinge->get_global_position().z;
 
-	// Remember how everything stands now
+	// 2. Remember how everything stands now
 	std::vector<Transform3D> saved;
 	for (DepthEntry& entry : entries) saved.push_back(entry.node->get_global_transform());
 
-	// Mirror every tracked piece that the swap moves, from its real layout, and flatten it again in a flat view
+	// 3. Mirror every tracked piece that the swap moves, from its real layout, and flatten it again in a flat view
 	for (int index = 0; index < (int)entries.size(); index++)
 	{
 		if (IsSwapFixed(entries[index].node)) continue;
@@ -685,12 +688,12 @@ bool PrepareSwap(Node* swapper)
 		entries[index].node->set_global_position(position);
 	}
 
-	// Check that layout, then put everything back
+	// 4. Check that layout, then put everything back
 	bool free = CheckLayout(current_view);
 	for (int index = 0; index < (int)entries.size(); index++) entries[index].node->set_global_transform(saved[index]);
 	if (!free) return false;
 
-	// The swap may go ahead, in a flat view lift the pieces to their real depth first
+	// 5. The swap may go ahead, in a flat view lift the pieces to their real depth first
 	if (is_flattened)
 	{
 		for (int index = 0; index < (int)entries.size(); index++)
@@ -704,13 +707,13 @@ bool PrepareSwap(Node* swapper)
 	}
 	return true;
 }
+
+// Let the GameManager ask whether a depth lift can move to its next stop, and get it ready if so
+// In iso the lift really travels, so its whole way is checked; in a flat view depth cannot be seen, so only the stop it arrives at matters.
+// Either way the layout is judged as it is in iso, the only view with real depth. A refused move makes the obstacle blink.
 bool PrepareShift(Node* carrier)
 {
-	// Purpose: let the GameManager ask whether a depth lift can move to its next stop, and get it ready if so.
-	// In iso the lift really travels, so its whole way is checked; in a flat view depth cannot be seen, so only the stop it arrives at matters.
-	// Either way the layout is judged as it is in iso, the only view with real depth. A refused move makes the obstacle blink.
-
-	// Find the lift among the tracked pieces, and how far it is going
+	// 1. Find the lift among the tracked pieces, and how far it is going
 	double shift = carrier->call("PendingShift");
 	int lift_index = -1;
 	for (int index = 0; index < (int)entries.size(); index++)
@@ -719,7 +722,7 @@ bool PrepareShift(Node* carrier)
 	}
 	if (lift_index < 0) return false;
 
-	// Remember where everything stands, and where each piece really is in depth
+	// 2. Remember where everything stands, and where each piece really is in depth
 	std::vector<Vector3> saved;
 	std::vector<double> real_z;
 	for (DepthEntry& entry : entries)
@@ -728,7 +731,7 @@ bool PrepareShift(Node* carrier)
 		real_z.push_back(is_flattened ? entry.true_z : (double)entry.node->get_global_position().z);
 	}
 
-	// The lift and everything standing on it move together; who rides is judged with every piece at its real depth, the lift included
+	// 3. The lift and everything standing on it move together; who rides is judged with every piece at its real depth, the lift included
 	for (int index = 0; index < (int)entries.size(); index++)
 	{
 		Vector3 position = saved[index];
@@ -745,7 +748,7 @@ bool PrepareShift(Node* carrier)
 	}
 	is_flattened = was_flattened;
 
-	// Try the move in the real layout: every quarter unit along the way in iso, only the arrival in a flat view
+	// 4. Try the move in the real layout: every quarter unit along the way in iso, only the arrival in a flat view
 	int steps = 1;
 	if (current_view == VIEW_ISO) steps = (int)ceil((shift < 0.0 ? -shift : shift) / 0.25);
 	if (steps < 1) steps = 1;
@@ -778,11 +781,11 @@ bool PrepareShift(Node* carrier)
 		}
 	}
 
-	// Put everything back as it was
+	// 5. Put everything back as it was
 	for (int index = 0; index < (int)entries.size(); index++) entries[index].node->set_global_position(saved[index]);
 	if (!free) return false;
 
-	// The move may go ahead: tell the lift what it carries, and in a flat view lift those pieces to their real depth first
+	// 6. The move may go ahead: tell the lift what it carries, and in a flat view lift those pieces to their real depth first
 	Array riders;
 	for (int index : moving)
 	{
@@ -796,11 +799,11 @@ bool PrepareShift(Node* carrier)
 	carrier->set_meta("riders", riders);
 	return true;
 }
+
+// Let the GameManager settle a carrier after its turn, sliding lifted pieces and riders back to the front edge
+// Returns whether an animated move started, so the caller knows to wait for the move_finished signal.
 bool FinishRotation(Node* carrier)
 {
-	// Purpose: let the GameManager settle a carrier after its turn, sliding lifted pieces and riders back to the front edge.
-	// Returns whether an animated move started, so the caller knows to wait for the move_finished signal.
-
 	// Everything not lifted stays where it is during the slide
 	bool any = false;
 	for (int index = 0; index < (int)entries.size(); index++)
@@ -822,10 +825,10 @@ bool FinishRotation(Node* carrier)
 	if (!any) return false;
 	return StartMove(0);
 }
+
+// Let the GameManager put every element back where the level placed it, used when the level restarts
 void ResetAll()
 {
-	// Purpose: let the GameManager put every element back where the level placed it, used when the level restarts.
-
 	// Return each element to its starting position and forget the depth it had since
 	for (DepthEntry& entry : entries)
 	{
@@ -842,11 +845,11 @@ void ResetAll()
 	progress = 1.0;
 }
 
-// Routines
+// ---- Routines ----
+
+// Called once the node is in the tree, prepares the signal and the settings this module uses
 void OnReady(Caller* instance)
 {
-	// Purpose: called once the node is in the tree, prepares the signal and the settings this module uses.
-
 	// Keep this node and create the signal it emits at the end of a move
 	controller = GetSelf<Node>(instance);
 	if (!controller->has_signal("move_finished")) controller->add_user_signal("move_finished");
@@ -855,10 +858,10 @@ void OnReady(Caller* instance)
 	default_front_z = flat_front_z;
 	move_time = transition_time;
 }
+
+// Called when the node leaves the scene tree, drops every element reference
 void OnDestroy(Caller* instance)
 {
-	// Purpose: called when the node leaves the scene tree, drops every element reference.
-
 	// Forget the nodes so nothing uses them after they are freed
 	controller = nullptr;
 	entries.clear();
@@ -866,31 +869,31 @@ void OnDestroy(Caller* instance)
 	is_flattened = false;
 	is_moving = false;
 }
+
+// Called every frame, runs the blinking of whatever is in the way
 void OnProcess(Caller* instance, double _delta)
 {
-	// Purpose: called every frame, runs the blinking of whatever is in the way.
-
 	// Advance every blink
 	if (!blinks.empty()) UpdateBlinks(_delta);
 }
+
+// Called every physics frame, advances the depth move while one is in progress
 void OnPhysicsProcess(Caller* instance, double _delta)
 {
-	// Purpose: called every physics frame, advances the depth move while one is in progress.
-
-	// Do nothing when no move is running
+	// 1. Do nothing when no move is running
 	if (!is_moving) return;
 
-	// Advance the move by the time passed
+	// 2. Advance the move by the time passed
 	progress += _delta / move_time;
 
-	// Keep sliding the elements until the move is complete
+	// 3. Keep sliding the elements until the move is complete
 	if (progress < 1.0)
 	{
 		PlaceAll(progress);
 		return;
 	}
 
-	// Settle everything at its destination and tell the GameManager the move is over
+	// 4. Settle everything at its destination and tell the GameManager the move is over
 	FinishMove();
 	controller->emit_signal("move_finished");
 }

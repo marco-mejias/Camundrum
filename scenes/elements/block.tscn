@@ -1,7 +1,12 @@
 [gd_scene format=3]
 
-[sub_resource type="StandardMaterial3D" id="Material_block"]
-albedo_color = Color(0.66, 0.68, 0.73, 1)
+[ext_resource type="Shader" path="res://shaders/block.gdshader" id="90_block_shader"]
+
+[sub_resource type="ShaderMaterial" id="Material_block"]
+shader = ExtResource("90_block_shader")
+shader_parameter/albedo = Color(0.66, 0.68, 0.73, 1)
+shader_parameter/mesh_size = Vector3(1, 1, 1)
+shader_parameter/seam_dark = 0.16
 
 [sub_resource type="BoxMesh" id="BoxMesh_block"]
 material = SubResource("Material_block")

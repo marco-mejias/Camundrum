@@ -1,5 +1,7 @@
 
-/* Camundrum - UI Controller */
+/* Camundrum - UI Controller
+ * View bar, fades, level title and every menu, with their animations and sounds.
+ */
 
 // Godot SDK
 #include <Godot/godot.hpp>
@@ -34,52 +36,51 @@ JENOVA_SCRIPT_BEGIN
 // Menus only announce what was pressed; the GameManager decides what happens. The options screen sends every change as setting_changed(key, value).
 
 // State
-Node* ui = nullptr;
-Node* fade = nullptr;
+Node* ui = nullptr; // This node, it emits the menu signals
+Node* fade = nullptr; // Black cover for fades
 Node* main_menu = nullptr;
 Node* level_select = nullptr;
 Node* pause_menu = nullptr;
 Node* options_menu = nullptr;
-Node* level_grid = nullptr;
-Node* complete_label = nullptr;
-Node* title_letters = nullptr;
-Node* level_title = nullptr;
-Node* options_return = nullptr;
-Node* view_labels[VIEW_COUNT] = { nullptr, nullptr, nullptr };
-double fade_alpha = 0.0;
-double fade_from = 0.0;
-double fade_to = 0.0;
-double fade_length = 0.0;
-double fade_progress = 1.0;
-double pop_clock = 1.0;
-double menu_clock = 0.0;
-double quiet_left = 0.0;
-double tick_left = 0.0;
+Node* level_grid = nullptr; // Where the level buttons are made
+Node* complete_label = nullptr; // Level complete message
+Node* title_letters = nullptr; // Row of title letters made at start
+Node* level_title = nullptr; // Level name shown when a level starts
+Node* options_return = nullptr; // Menu the options screen goes back to
+Node* view_labels[VIEW_COUNT] = { nullptr, nullptr, nullptr }; // Side, top and iso labels of the view bar
+double fade_alpha = 0.0; // Darkness of the cover right now
+double fade_from = 0.0; // Darkness at the start of the fade
+double fade_to = 0.0; // Darkness at the end of the fade
+double fade_length = 0.0; // Length of the fade
+double fade_progress = 1.0; // 0 to 1 along the fade
+double pop_clock = 1.0; // Time into the level complete pop
+double menu_clock = 0.0; // Runs all the time, drives the title wave
+double quiet_left = 0.0; // Menu ticks are muted while a menu opens
+double tick_left = 0.0; // Minimum gap between slider ticks
 
 // The colour of each view, brighter for the interface
+// The colour the interface uses for a view: blue for side, red for top, green for iso
 Color ViewTint(int view)
 {
-	// Purpose: the colour the interface uses for a view: blue for side, red for top, green for iso.
-
 	// The same order as the ViewMode values
 	if (view == VIEW_TOP) return Color(1.0f, 0.45f, 0.4f);
 	if (view == VIEW_ISO) return Color(0.42f, 0.95f, 0.8f);
 	return Color(0.55f, 0.7f, 1.0f);
 }
 
-// Look
+// ---- Look ----
+
+// Cover the screen with black at a given strength, 0 is clear and 1 is fully black
 void ApplyFade(double alpha)
 {
-	// Purpose: cover the screen with black at a given strength, 0 is clear and 1 is fully black.
-
 	// Remember the strength and paint the cover with it
 	fade_alpha = alpha;
 	if (fade) fade->set("color", Color(0.0f, 0.0f, 0.0f, (float)alpha));
 }
+
+// Size the level complete message for its pop in, growing past its size and settling back
 void ApplyPop()
 {
-	// Purpose: size the level complete message for its pop in, growing past its size and settling back.
-
 	// An eased curve that overshoots a little before resting at full size
 	if (!complete_label) return;
 	double amount = pop_clock / 0.35;
@@ -89,18 +90,18 @@ void ApplyPop()
 	complete_label->set("scale", Vector2((float)size, (float)size));
 }
 
-// Animation
+// ---- Animation ----
+
+// Make a control grow and shrink around its middle
 void CenterPivot(Control* control)
 {
-	// Purpose: make a control grow and shrink around its middle.
-
 	// Its pivot sits at half its size
 	if (control) control->set_pivot_offset(control->get_size() * 0.5f);
 }
+
+// Ease a control to a size, springing slightly past it, replacing any size change still running on it
 void TweenScale(Control* control, float scale, double seconds)
 {
-	// Purpose: ease a control to a size, springing slightly past it, replacing any size change still running on it.
-
 	// Stop the last one, then start the new one around the control's middle
 	if (!control) return;
 	if (control->has_meta("scale_tween"))
@@ -113,19 +114,19 @@ void TweenScale(Control* control, float scale, double seconds)
 	tween->tween_property(control, "scale", Vector2(scale, scale), seconds)->set_trans(Tween::TRANS_BACK)->set_ease(Tween::EASE_OUT);
 	control->set_meta("scale_tween", tween);
 }
+
+// Centre the pivot of every piece of a box once it has been laid out, so pieces grow around their middle
 void CenterPivots(NodePath path)
 {
-	// Purpose: centre the pivot of every piece of a box once it has been laid out, so pieces grow around their middle.
-
 	// Each direct child
 	Node* box = ui ? ui->get_node_or_null(path) : nullptr;
 	if (!box) return;
 	for (int index = 0; index < box->get_child_count(); index++) CenterPivot(Object::cast_to<Control>(box->get_child(index)));
 }
+
+// Bring the pieces of a menu in one after another: each fades in and grows into place
 void AnimateEntries(Node* box)
 {
-	// Purpose: bring the pieces of a menu in one after another: each fades in and grows into place.
-
 	// Every visible piece of the box, in order, a little later than the one before
 	if (!box) return;
 	int order = 0;
@@ -150,10 +151,10 @@ void AnimateEntries(Node* box)
 	// The pivots are only right once the box has laid its pieces out, at the end of this frame
 	ui->call_deferred("CenterPivots", box->get_path());
 }
+
+// Drop the letters of the title in one after another, each popping into place
 void DropTitle()
 {
-	// Purpose: drop the letters of the title in one after another, each popping into place.
-
 	// Every letter, a little later than the one before
 	if (!title_letters) return;
 	for (int index = 0; index < title_letters->get_child_count(); index++)
@@ -166,10 +167,10 @@ void DropTitle()
 	}
 	ui->call_deferred("CenterPivots", title_letters->get_path());
 }
+
+// Keep the title alive while the main menu shows: the letters bob in a wave and their colours drift through the three views
 void WaveTitle(double delta)
 {
-	// Purpose: keep the title alive while the main menu shows: the letters bob in a wave and their colours drift through the three views.
-
 	// Only while the main menu is on screen
 	if (!title_letters || !main_menu || !(bool)main_menu->get("visible")) return;
 	for (int index = 0; index < title_letters->get_child_count(); index++)
@@ -191,21 +192,21 @@ void WaveTitle(double delta)
 	}
 }
 
-// Sounds
+// ---- Sounds ----
+
+// Play a menu sound, except right after a menu opens, when the first button takes the focus by itself
 void PlayUi(int sound)
 {
-	// Purpose: play a menu sound, except right after a menu opens, when the first button takes the focus by itself.
-
 	// Quiet for a moment after opening
 	if (sound == SOUND_UI_MOVE && quiet_left > 0.0) return;
 	if (ui) PlaySound(ui, sound);
 }
 
-// Commands
+// ---- Commands ----
+
+// Let the GameManager darken or clear the screen over some time
 void FadeTo(double alpha, double seconds)
 {
-	// Purpose: let the GameManager darken or clear the screen over some time.
-
 	// Start from the current strength and aim at the new one
 	fade_from = fade_alpha;
 	fade_to = alpha;
@@ -219,10 +220,10 @@ void FadeTo(double alpha, double seconds)
 		ApplyFade(alpha);
 	}
 }
+
+// Let the GameManager light up the active view in the indicator at the top of the screen
 void ShowView(int view)
 {
-	// Purpose: let the GameManager light up the active view in the indicator at the top of the screen.
-
 	// The active view is fully drawn in its own colour, the others are faded
 	for (int index = 0; index < VIEW_COUNT; index++)
 	{
@@ -241,10 +242,10 @@ void ShowView(int view)
 		TweenScale(active, 1.0f, 0.3);
 	}
 }
+
+// Let the GameManager show the level's name when it starts: it grows in under the view bar and fades out after a moment
 void ShowLevelTitle(String text)
 {
-	// Purpose: let the GameManager show the level's name when it starts: it grows in under the view bar and fades out after a moment.
-
 	// The text, starting see-through and a little small
 	Label* title = Object::cast_to<Label>(level_title);
 	if (!title) return;
@@ -267,11 +268,11 @@ void ShowLevelTitle(String text)
 	tween->tween_property(title, "modulate", Color(1.0f, 1.0f, 1.0f, 0.0f), 0.5)->set_delay(1.9);
 	title->set_meta("title_tween", tween);
 }
+
+// Let the GameManager show or hide the level complete message
+// The parameter is a number because calls between scripts cannot carry a bool.
 void ShowComplete(int shown)
 {
-	// Purpose: let the GameManager show or hide the level complete message.
-	// The parameter is a number because calls between scripts cannot carry a bool.
-
 	// Show or hide the message, it pops in from small
 	if (!complete_label) return;
 	complete_label->set("visible", shown != 0);
@@ -280,22 +281,22 @@ void ShowComplete(int shown)
 	ApplyPop();
 }
 
-// Menus
+// ---- Menus ----
+
+// Tell the GameManager that a menu button was pressed, with the sound that goes with it
+// The signal waits for the end of the frame, because the GameManager answers by changing the menus.
 void Announce(const String& signal_name)
 {
-	// Purpose: tell the GameManager that a menu button was pressed, with the sound that goes with it.
-	// The signal waits for the end of the frame, because the GameManager answers by changing the menus.
-
 	// Going back sounds different from going forward
 	bool back = signal_name == "back_pressed" || signal_name == "resume_pressed" || signal_name == "menu_pressed";
 	PlayUi(back ? SOUND_UI_BACK : SOUND_UI_CONFIRM);
 	ui->call_deferred("emit_signal", signal_name);
 }
+
+// Put the keyboard focus on the first button that can be pressed, so a menu works with the arrow keys and Enter
+// Returns whether a button was found.
 bool FocusFirst(Node* parent)
 {
-	// Purpose: put the keyboard focus on the first button that can be pressed, so a menu works with the arrow keys and Enter.
-	// Returns whether a button was found.
-
 	// Look through the children, and inside containers
 	for (int index = 0; index < parent->get_child_count(); index++)
 	{
@@ -309,17 +310,17 @@ bool FocusFirst(Node* parent)
 	}
 	return false;
 }
+
+// The column of pieces inside a menu
 Node* BoxOf(Node* menu)
 {
-	// Purpose: the column of pieces inside a menu.
-
 	// Every menu keeps them in Center/Box
 	return menu ? menu->get_node_or_null("Center/Box") : nullptr;
 }
+
+// Show one menu and hide the others, or hide them all when given nothing; the menu shown fades in and its pieces come in one by one
 void ShowOnly(Node* shown)
 {
-	// Purpose: show one menu and hide the others, or hide them all when given nothing; the menu shown fades in and its pieces come in one by one.
-
 	// Each menu is visible only when it is the one asked for
 	Node* menus[4] = { main_menu, level_select, pause_menu, options_menu };
 	for (Node* menu : menus)
@@ -341,20 +342,20 @@ void ShowOnly(Node* shown)
 	quiet_left = 0.25;
 	FocusFirst(shown);
 }
+
+// Give a button or slider its feel: the mouse over it takes the focus, and the focus makes it grow and tick
 void ConnectFeel(Control* control)
 {
-	// Purpose: give a button or slider its feel: the mouse over it takes the focus, and the focus makes it grow and tick.
-
 	// Mouse and focus both lead to the same reaction
 	if (!control) return;
 	control->connect("mouse_entered", Callable(ui, "OnPieceHovered").bind(control->get_path()));
 	control->connect("focus_entered", Callable(ui, "OnPieceFocused").bind(control->get_path()));
 	control->connect("focus_exited", Callable(ui, "OnPieceUnfocused").bind(control->get_path()));
 }
+
+// Give every button and slider under a node its feel
 void ConnectFeelUnder(Node* parent)
 {
-	// Purpose: give every button and slider under a node its feel.
-
 	// Look through the children, and inside containers
 	for (int index = 0; index < parent->get_child_count(); index++)
 	{
@@ -364,11 +365,11 @@ void ConnectFeelUnder(Node* parent)
 	}
 }
 
-// Commands
+// ---- Commands ----
+
+// Let the GameManager open the main menu, saying how many levels there are and whether every one has been finished
 void ShowMainMenu(int level_count, int finished_all)
 {
-	// Purpose: let the GameManager open the main menu, saying how many levels there are and whether every one has been finished.
-
 	// Play needs at least one level, and a message tells what is going on when there are none or all are done
 	if (!main_menu) return;
 	Node* play = main_menu->get_node_or_null("Center/Box/Play");
@@ -384,10 +385,10 @@ void ShowMainMenu(int level_count, int finished_all)
 	}
 	ShowOnly(main_menu);
 }
+
+// Let the GameManager open the level selector, with one button per level: finished ones marked, the next one open, the rest locked
 void ShowLevelSelect(int level_count, int open_count)
 {
-	// Purpose: let the GameManager open the level selector, with one button per level: finished ones marked, the next one open, the rest locked.
-
 	// Empty the grid of the buttons made last time
 	if (!level_grid) return;
 	while (level_grid->get_child_count() > 0)
@@ -420,19 +421,19 @@ void ShowLevelSelect(int level_count, int open_count)
 	AnimateEntries(level_grid);
 	FocusFirst(level_grid);
 }
+
+// Let the GameManager open or close the pause menu
+// The parameter is a number because calls between scripts cannot carry a bool.
 void ShowPause(int shown)
 {
-	// Purpose: let the GameManager open or close the pause menu.
-	// The parameter is a number because calls between scripts cannot carry a bool.
-
 	// Show it alone, or hide every menu
 	ShowOnly(shown != 0 ? pause_menu : nullptr);
 }
+
+// Let the GameManager open the options screen with the player's current settings
+// It comes back to the menu it was opened from, which the interface remembers by itself.
 void ShowOptions(double master, double effects, double interface_volume, double shake, int fullscreen)
 {
-	// Purpose: let the GameManager open the options screen with the player's current settings.
-	// It comes back to the menu it was opened from, which the interface remembers by itself.
-
 	// Put each control on its value without announcing a change
 	if (!options_menu) return;
 	const char* names[4] = { "Master", "Effects", "Interface", "Shake" };
@@ -446,102 +447,102 @@ void ShowOptions(double master, double effects, double interface_volume, double 
 	if (toggle) toggle->set_pressed_no_signal(fullscreen != 0);
 	ShowOnly(options_menu);
 }
+
+// Let the GameManager close every menu, to go back to playing
 void HideMenus()
 {
-	// Purpose: let the GameManager close every menu, to go back to playing.
-
 	// Nothing shown
 	ShowOnly(nullptr);
 }
 
-// Buttons
+// ---- Buttons ----
+
+// Called when the Play button is pressed
 void OnPlayButton()
 {
-	// Purpose: called when the Play button is pressed.
-
 	// Tell the GameManager
 	Announce("play_pressed");
 }
+
+// Called when a Select level button is pressed
 void OnSelectButton()
 {
-	// Purpose: called when a Select level button is pressed.
-
 	// Tell the GameManager
 	Announce("select_pressed");
 }
+
+// Called when an Options button is pressed, in the main menu or the pause menu
 void OnOptionsButton()
 {
-	// Purpose: called when an Options button is pressed, in the main menu or the pause menu.
-
 	// Remember where to come back to, and ask the GameManager for the current settings
 	options_return = (pause_menu && (bool)pause_menu->get("visible")) ? pause_menu : main_menu;
 	Announce("options_pressed");
 }
+
+// Called when the Back button of the options screen is pressed
 void OnOptionsBack()
 {
-	// Purpose: called when the Back button of the options screen is pressed.
-
 	// Straight back to the menu it was opened from, nothing else changes
 	PlayUi(SOUND_UI_BACK);
 	ShowOnly(options_return ? options_return : main_menu);
 }
+
+// Called when the Quit button is pressed
 void OnQuitButton()
 {
-	// Purpose: called when the Quit button is pressed.
-
 	// Tell the GameManager
 	Announce("quit_pressed");
 }
+
+// Called when the Back button of the selector is pressed
 void OnBackButton()
 {
-	// Purpose: called when the Back button of the selector is pressed.
-
 	// Tell the GameManager
 	Announce("back_pressed");
 }
+
+// Called when the Resume button is pressed
 void OnResumeButton()
 {
-	// Purpose: called when the Resume button is pressed.
-
 	// Tell the GameManager
 	Announce("resume_pressed");
 }
+
+// Called when the Restart button is pressed
 void OnRestartButton()
 {
-	// Purpose: called when the Restart button is pressed.
-
 	// Tell the GameManager
 	Announce("restart_pressed");
 }
+
+// Called when the Main menu button is pressed
 void OnMenuButton()
 {
-	// Purpose: called when the Main menu button is pressed.
-
 	// Tell the GameManager
 	Announce("menu_pressed");
 }
+
+// Tell the GameManager which level was chosen in the selector
 void OnLevelButton(int index)
 {
-	// Purpose: tell the GameManager which level was chosen in the selector.
-
 	// The level number travels with the signal, once this frame's work is done
 	PlayUi(SOUND_UI_CONFIRM);
 	ui->call_deferred("emit_signal", "level_chosen", index);
 }
+
+// Called when an options slider moves: the change goes to the GameManager, with a soft tick so the volume can be heard
 void OnSliderChanged(double value, String key)
 {
-	// Purpose: called when an options slider moves: the change goes to the GameManager, with a soft tick so the volume can be heard.
-
 	// Announce it at the end of the frame, and tick at most a dozen times a second
 	ui->call_deferred("emit_signal", "setting_changed", key, value);
 	if (tick_left > 0.0) return;
 	tick_left = 0.08;
 	PlaySound(ui, key == "effects" ? SOUND_LAND : SOUND_UI_MOVE);
 }
+
+// Called when the fullscreen switch is flipped
 void OnFullscreenPressed()
 {
-	// Purpose: called when the fullscreen switch is flipped.
-
 	// Its new state goes to the GameManager as a number
 	Button* toggle = options_menu ? Object::cast_to<Button>(options_menu->get_node_or_null("Center/Box/Rows/Fullscreen")) : nullptr;
 	if (!toggle) return;
@@ -549,53 +550,53 @@ void OnFullscreenPressed()
 	ui->call_deferred("emit_signal", "setting_changed", "fullscreen", toggle->is_pressed() ? 1.0 : 0.0);
 }
 
-// Feel
+// ---- Feel ----
+
+// Called when the mouse goes over a button or slider: it takes the focus, so mouse and keys share one highlight
 void OnPieceHovered(NodePath path)
 {
-	// Purpose: called when the mouse goes over a button or slider: it takes the focus, so mouse and keys share one highlight.
-
 	// Only pieces that can be used
 	Control* piece = ui ? Object::cast_to<Control>(ui->get_node_or_null(path)) : nullptr;
 	if (piece && !(bool)piece->get("disabled")) piece->grab_focus();
 }
+
+// Called when a button or slider takes the focus: it grows a little and ticks
 void OnPieceFocused(NodePath path)
 {
-	// Purpose: called when a button or slider takes the focus: it grows a little and ticks.
-
 	// Grow and tick
 	Control* piece = ui ? Object::cast_to<Control>(ui->get_node_or_null(path)) : nullptr;
 	if (!piece) return;
 	TweenScale(piece, piece->is_class("HSlider") ? 1.03f : 1.07f, 0.16);
 	PlayUi(SOUND_UI_MOVE);
 }
+
+// Called when a button or slider loses the focus: it settles back to its size
 void OnPieceUnfocused(NodePath path)
 {
-	// Purpose: called when a button or slider loses the focus: it settles back to its size.
-
 	// Back to normal
 	Control* piece = ui ? Object::cast_to<Control>(ui->get_node_or_null(path)) : nullptr;
 	if (piece) TweenScale(piece, 1.0f, 0.14);
 }
+
+// Make a button of the menus call one of this module's functions when it is pressed
 void ConnectButton(const String& path, const String& method)
 {
-	// Purpose: make a button of the menus call one of this module's functions when it is pressed.
-
 	// Find the button and connect it, if it is there
 	Node* button = ui->get_node_or_null(NodePath(path));
 	if (button) button->connect("pressed", Callable(ui, method));
 }
+
+// Make an options slider report its changes under a setting's name
 void ConnectSlider(const String& name, const String& key)
 {
-	// Purpose: make an options slider report its changes under a setting's name.
-
 	// Find it in the options screen and connect it
 	Node* slider = options_menu ? options_menu->get_node_or_null(NodePath(String("Center/Box/Rows/") + name)) : nullptr;
 	if (slider) slider->connect("value_changed", Callable(ui, "OnSliderChanged").bind(key));
 }
+
+// Split the main menu title into one label per letter, so the letters can drop in and wave on their own
 void BuildTitle()
 {
-	// Purpose: split the main menu title into one label per letter, so the letters can drop in and wave on their own.
-
 	// The title label gives the text and the size, and is then hidden
 	Label* title = main_menu ? Object::cast_to<Label>(main_menu->get_node_or_null("Center/Box/Title")) : nullptr;
 	if (!title) return;
@@ -618,23 +619,23 @@ void BuildTitle()
 	title_letters = row;
 }
 
-// Routines
+// ---- Routines ----
+
+// Called once the node and its children are in the tree, finds the pieces of the interface and gives them their feel
 void OnReady(Caller* instance)
 {
-	// Purpose: called once the node and its children are in the tree, finds the pieces of the interface and gives them their feel.
-
-	// Find the black cover and the messages
+	// 1. Find the black cover and the messages
 	ui = GetSelf<Node>(instance);
 	fade = ui->get_node_or_null("Fade");
 	complete_label = ui->get_node_or_null("CompleteLabel");
 	level_title = ui->get_node_or_null("LevelTitle");
 
-	// Find the three labels of the view indicator, in the same order as the ViewMode values
+	// 2. Find the three labels of the view indicator, in the same order as the ViewMode values
 	view_labels[VIEW_SIDE] = ui->get_node_or_null("ViewBar/Side");
 	view_labels[VIEW_TOP] = ui->get_node_or_null("ViewBar/Top");
 	view_labels[VIEW_ISO] = ui->get_node_or_null("ViewBar/Iso");
 
-	// Find the menus, and wire their buttons to the functions that announce them
+	// 3. Find the menus, and wire their buttons to the functions that announce them
 	main_menu = ui->get_node_or_null("Menus/MainMenu");
 	level_select = ui->get_node_or_null("Menus/LevelSelect");
 	pause_menu = ui->get_node_or_null("Menus/PauseMenu");
@@ -657,27 +658,27 @@ void OnReady(Caller* instance)
 	ConnectSlider("Interface", "interface");
 	ConnectSlider("Shake", "shake");
 
-	// Every button and slider grows and ticks when it is reached, and the title gets its own letters
+	// 4. Every button and slider grows and ticks when it is reached, and the title gets its own letters
 	Node* menus = ui->get_node_or_null("Menus");
 	if (menus) ConnectFeelUnder(menus);
 	BuildTitle();
 
-	// The signals the GameManager listens to: the level one carries the chosen level, the setting one a name and a value
+	// 5. The signals the GameManager listens to: the level one carries the chosen level, the setting one a name and a value
 	const char* signals[10] = { "play_pressed", "select_pressed", "quit_pressed", "back_pressed", "resume_pressed", "restart_pressed", "menu_pressed", "level_chosen", "options_pressed", "setting_changed" };
 	for (int index = 0; index < 10; index++)
 	{
 		if (!ui->has_signal(signals[index])) ui->add_user_signal(signals[index]);
 	}
 
-	// Start with a clear screen, no message and no menu
+	// 6. Start with a clear screen, no message and no menu
 	ApplyFade(0.0);
 	ShowComplete(0);
 	ShowOnly(nullptr);
 }
+
+// Called when the node leaves the scene tree, drops every node reference
 void OnDestroy(Caller* instance)
 {
-	// Purpose: called when the node leaves the scene tree, drops every node reference.
-
 	// Forget the nodes so nothing uses them after they are freed
 	ui = nullptr;
 	fade = nullptr;
@@ -693,28 +694,28 @@ void OnDestroy(Caller* instance)
 	for (int index = 0; index < VIEW_COUNT; index++) view_labels[index] = nullptr;
 	fade_progress = 1.0;
 }
+
+// Called every frame, keeps the menus alive and advances a fade while one is running
 void OnProcess(Caller* instance, double _delta)
 {
-	// Purpose: called every frame, keeps the menus alive and advances a fade while one is running.
-
-	// Clocks for the title wave and the sound pauses
+	// 1. Clocks for the title wave and the sound pauses
 	menu_clock += _delta;
 	if (menu_clock > 10000.0) menu_clock -= 10000.0;
 	if (quiet_left > 0.0) quiet_left -= _delta;
 	if (tick_left > 0.0) tick_left -= _delta;
 	WaveTitle(_delta);
 
-	// Advance the pop in of the message while it runs
+	// 2. Advance the pop in of the message while it runs
 	if (pop_clock < 1.0)
 	{
 		pop_clock += _delta;
 		ApplyPop();
 	}
 
-	// Do nothing more when no fade is running
+	// 3. Do nothing more when no fade is running
 	if (fade_progress >= 1.0) return;
 
-	// Advance by the time passed and paint the strength for the new progress
+	// 4. Advance by the time passed and paint the strength for the new progress
 	fade_progress += _delta / fade_length;
 	if (fade_progress > 1.0) fade_progress = 1.0;
 	ApplyFade(fade_from + (fade_to - fade_from) * fade_progress);

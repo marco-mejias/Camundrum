@@ -1,6 +1,6 @@
 # Camundrum — Game Feel
 
-How the feel changes work: what they do, where they live and how to tune them. Companion to [PLAN.md](PLAN.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
+How the feel changes work: what they do, where they live and how to tune them. Companion to [DESIGN.md](DESIGN.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
 
 There are two groups: how the player moves, in [scripts/PlayerController.cpp](scripts/PlayerController.cpp), and how a view switch feels, spread over the GameManager, the DepthController and the CameraController.
 

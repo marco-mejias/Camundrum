@@ -1,0 +1,198 @@
+[gd_scene format=3 uid="uid://bqct7b7ahn8hp"]
+
+[ext_resource type="PackedScene" path="res://scenes/elements/block.tscn" id="1_block"]
+[ext_resource type="PackedScene" path="res://scenes/elements/exit.tscn" id="2_exit"]
+[ext_resource type="PackedScene" uid="uid://d0cklo3chni14" path="res://scenes/player.tscn" id="3_player"]
+[ext_resource type="PackedScene" path="res://scenes/elements/robot.tscn" id="4_robot"]
+[ext_resource type="PackedScene" path="res://scenes/elements/view_block.tscn" id="5_view"]
+[ext_resource type="PackedScene" path="res://scenes/elements/board_plate.tscn" id="6_bplate"]
+[ext_resource type="PackedScene" path="res://scenes/elements/board_hole.tscn" id="7_hole"]
+[ext_resource type="PackedScene" path="res://scenes/elements/active_platform.tscn" id="8_platform"]
+
+[sub_resource type="StandardMaterial3D" id="Material_board"]
+albedo_color = Color(0.17, 0.27, 0.52, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_board"]
+material = SubResource("Material_board")
+size = Vector3(19, 10, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_board"]
+size = Vector3(19, 10, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bound_side"]
+size = Vector3(1, 12, 7)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bound_top"]
+size = Vector3(21, 1, 7)
+
+[node name="RobotSteps" type="Node3D" unique_id=1510485556]
+metadata/flat_front_z = 4.5
+metadata/starting_view = 0
+
+[node name="Board" type="StaticBody3D" parent="." unique_id=582058187]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, -0.75)
+
+[node name="Mesh" type="MeshInstance3D" parent="Board" unique_id=163578423]
+mesh = SubResource("BoxMesh_board")
+
+[node name="Collision" type="CollisionShape3D" parent="Board" unique_id=2046554632]
+shape = SubResource("BoxShape3D_board")
+
+[node name="BoardBounds" type="StaticBody3D" parent="." unique_id=950543372]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Left" type="CollisionShape3D" parent="BoardBounds" unique_id=1904950010]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 4, 2)
+shape = SubResource("BoxShape3D_bound_side")
+
+[node name="Right" type="CollisionShape3D" parent="BoardBounds" unique_id=228781516]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 4, 2)
+shape = SubResource("BoxShape3D_bound_side")
+
+[node name="Top" type="CollisionShape3D" parent="BoardBounds" unique_id=664845731]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.5, 2)
+shape = SubResource("BoxShape3D_bound_top")
+
+[node name="Bottom" type="CollisionShape3D" parent="BoardBounds" unique_id=2002073645]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.5, 2)
+shape = SubResource("BoxShape3D_bound_top")
+
+[node name="FloorLeft" parent="." unique_id=359834345 instance=ExtResource("1_block")]
+transform = Transform3D(9, 0, 0, 0, 1, 0, 0, 0, 5, -5, -0.5, 2)
+
+[node name="FloorRight" parent="." unique_id=935942166 instance=ExtResource("1_block")]
+transform = Transform3D(10, 0, 0, 0, 1, 0, 0, 0, 5, 4.5, -0.5, 2)
+
+[node name="WallLeft" parent="." unique_id=9498911 instance=ExtResource("1_block")]
+transform = Transform3D(1, 0, 0, 0, 2, 0, 0, 0, 5, -9, 1, 2)
+
+[node name="WallRight" parent="." unique_id=189169484 instance=ExtResource("1_block")]
+transform = Transform3D(1, 0, 0, 0, 9, 0, 0, 0, 5, 9, 4.5, 2)
+
+[node name="FirstColumn" parent="." unique_id=976623184 instance=ExtResource("1_block")]
+transform = Transform3D(1, 0, 0, 0, 5, 0, 0, 0, 2, -3.5, 2, 3)
+
+[node name="Tower" parent="." unique_id=1836386124 instance=ExtResource("1_block")]
+transform = Transform3D(1, 0, 0, 0, 2, 0, 0, 0, 1.5, 0, 1, 0.25)
+
+[node name="Rail" parent="." unique_id=303407122 instance=ExtResource("5_view")]
+transform = Transform3D(17, 0, 0, 0, 1, 0, 0, 0, 0.5, 0, 0.5, 4.25)
+solid_view = 2
+
+[node name="Platform" parent="." unique_id=339901921 instance=ExtResource("8_platform")]
+transform = Transform3D(11, 0, 0, 0, 1, 0, 0, 0, 1, 3, 4.5, 0)
+starts_active = false
+stays_active = true
+
+[node name="BoardPlate" parent="." unique_id=811064916 instance=ExtResource("6_bplate")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 6.5, -0.5)
+target = NodePath("../Platform")
+stays_pressed = true
+
+[node name="Hole0" parent="." unique_id=1079697768 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 7.5, 0)
+
+[node name="Hole1" parent="." unique_id=2066216025 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 7.5, 0)
+
+[node name="Hole2" parent="." unique_id=515374940 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 7.5, 0)
+
+[node name="Hole3" parent="." unique_id=933537320 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 7.5, 0)
+
+[node name="Hole4" parent="." unique_id=1568331009 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 7.5, 0)
+
+[node name="Hole5" parent="." unique_id=1768334351 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 7.5, 0)
+
+[node name="Hole6" parent="." unique_id=1131754938 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 7.5, 0)
+
+[node name="Hole7" parent="." unique_id=298110992 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 7.5, 0)
+
+[node name="Hole8" parent="." unique_id=1720520641 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 7.5, 0)
+
+[node name="Hole9" parent="." unique_id=603809907 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.5, 0)
+
+[node name="Hole10" parent="." unique_id=1414450132 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 7.5, 0)
+
+[node name="Hole11" parent="." unique_id=1087833520 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 7.5, 0)
+
+[node name="Hole12" parent="." unique_id=1296014424 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 7.5, 0)
+
+[node name="Hole18" parent="." unique_id=1739511375 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 8.5, 0)
+
+[node name="Hole19" parent="." unique_id=320838593 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 8.5, 0)
+
+[node name="Hole20" parent="." unique_id=162735359 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 8.5, 0)
+
+[node name="Hole21" parent="." unique_id=867875818 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 8.5, 0)
+
+[node name="Hole22" parent="." unique_id=206992748 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 8.5, 0)
+
+[node name="Hole23" parent="." unique_id=1709518412 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 8.5, 0)
+
+[node name="Hole24" parent="." unique_id=2025075395 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 8.5, 0)
+
+[node name="Hole25" parent="." unique_id=1210260695 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 8.5, 0)
+
+[node name="Hole26" parent="." unique_id=1306724770 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 8.5, 0)
+
+[node name="Hole27" parent="." unique_id=17830067 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 8.5, 0)
+
+[node name="Hole28" parent="." unique_id=1929615167 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 8.5, 0)
+
+[node name="Hole29" parent="." unique_id=1334692412 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 8.5, 0)
+
+[node name="Hole30" parent="." unique_id=2016802933 instance=ExtResource("7_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 8.5, 0)
+
+[node name="Exit" parent="." unique_id=21908556 instance=ExtResource("2_exit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 8.5, 0.45)
+goal_view = -1
+
+[node name="Robot" parent="." unique_id=2106751202 instance=ExtResource("4_robot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.5, 3)
+starts_on = false
+starts_forward = true
+move_speed = 2.0
+
+[node name="Player" parent="." unique_id=1026837024 instance=ExtResource("3_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.5, 1)
+move_speed = 6.0
+ground_acceleration = 70.0
+ground_deceleration = 90.0
+air_acceleration = 40.0
+jump_speed = 9.0
+rise_gravity = 25.0
+fall_gravity = 45.0
+max_fall_speed = 22.0
+jump_cut = 0.45
+coyote_time = 0.1
+jump_buffer_time = 0.12
+fall_limit = -12.0
+push_speed = 3.5
+
+[node name="Light" type="DirectionalLight3D" parent="." unique_id=1687926836]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 10, 0)

@@ -1,5 +1,7 @@
 
-/* Camundrum - Settings Controller */
+/* Camundrum - Settings Controller
+ * Keeps the player's options (volumes, screen shake, fullscreen) in user://settings.cfg.
+ */
 
 // Godot SDK
 #include <Godot/godot.hpp>
@@ -19,53 +21,54 @@ JENOVA_SCRIPT_BEGIN
 // This module only stores them; the GameManager hands each one to the module it belongs to
 
 // State
-Ref<ConfigFile> settings;
+Ref<ConfigFile> settings; // The options file in memory
 
-// Values
+// ---- Values ----
+
+// The value an option has before the player changes it
 double DefaultFor(const String& key)
 {
-	// Purpose: the value an option has before the player changes it.
-
 	// Comfortable volumes, full shake, a window
 	if (key == "master") return 0.8;
 	if (key == "effects") return 1.0;
 	if (key == "interface") return 0.8;
 	if (key == "shake") return 1.0;
+	if (key == "fullscreen") return 1.0; // The game opens fullscreen until the player chooses otherwise
 	return 0.0;
 }
 
-// Commands
+// ---- Commands ----
+
+// Let the GameManager read an option
 double Get(String key)
 {
-	// Purpose: let the GameManager read an option.
-
 	// The saved value, or its default
 	if (settings.is_null()) return DefaultFor(key);
 	return (double)settings->get_value("options", key, DefaultFor(key));
 }
+
+// Let the GameManager change an option, which is saved at once
 void Set(String key, double value)
 {
-	// Purpose: let the GameManager change an option, which is saved at once.
-
 	// Store and write it
 	if (settings.is_null()) return;
 	settings->set_value("options", key, value);
 	settings->save("user://settings.cfg");
 }
 
-// Routines
+// ---- Routines ----
+
+// Called once the node is in the tree, reads the saved options, if there are any
 void OnReady(Caller* instance)
 {
-	// Purpose: called once the node is in the tree, reads the saved options, if there are any.
-
 	// A missing file simply means every option keeps its default
 	settings.instantiate();
 	settings->load("user://settings.cfg");
 }
+
+// Called when the node leaves the scene tree, lets the options go
 void OnDestroy(Caller* instance)
 {
-	// Purpose: called when the node leaves the scene tree, lets the options go.
-
 	// Drop the file
 	settings.unref();
 }

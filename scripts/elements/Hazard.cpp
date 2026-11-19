@@ -1,5 +1,7 @@
 
-/* Camundrum - Hazard Element */
+/* Camundrum - Hazard Element
+ * Spikes that kill the player on touch (prototype, not used in the game levels).
+ */
 
 // Godot SDK
 #include <Godot/godot.hpp>
@@ -23,36 +25,36 @@ JENOVA_PROPERTY(bool, on_board, false)
 
 // The state of each hazard lives in its node's metadata: on_board, view, frozen, settle_frames
 
-// Contract
+// ---- Contract ----
+
+// Part of the element contract, tells the hazard which view is active
 void OnViewChanged(Caller* instance, int view)
 {
-	// Purpose: part of the element contract, tells the hazard which view is active.
-
 	// Remember the view, it decides whether the hazard is dangerous
 	GetSelf<Area3D>(instance)->set_meta("view", view);
 }
+
+// Part of the element contract, keeps the hazard harmless while the level changes shape
 void SetFrozen(Caller* instance, int frozen)
 {
-	// Purpose: part of the element contract, keeps the hazard harmless while the level changes shape.
-
 	// Store the state
 	GetSelf<Area3D>(instance)->set_meta("frozen", frozen != 0);
 }
+
+// Part of the element contract, returns the hazard to its starting state when the level restarts
 void Reset(Caller* instance)
 {
-	// Purpose: part of the element contract, returns the hazard to its starting state when the level restarts.
-
 	// Ignore touches for a couple of frames, the physics still lists whoever stood here before being moved away
 	auto hazard = GetSelf<Area3D>(instance);
 	hazard->set_meta("settle_frames", 2);
 	hazard->set_meta("frozen", false);
 }
 
-// Routines
+// ---- Routines ----
+
+// Called once the node is in the tree, prepares the hazard
 void OnReady(Caller* instance)
 {
-	// Purpose: called once the node is in the tree, prepares the hazard.
-
 	// Copy the inspector setting onto the node, where every function can read it safely
 	auto hazard = GetSelf<Area3D>(instance);
 	hazard->set_meta("on_board", on_board);
@@ -63,15 +65,15 @@ void OnReady(Caller* instance)
 	hazard->set_meta("settle_frames", 0);
 	hazard->set_collision_mask(LAYER_ACTORS);
 }
+
+// Called every physics frame, kills the player when it touches the hazard in a view where it is dangerous
 void OnPhysicsProcess(Caller* instance, double _delta)
 {
-	// Purpose: called every physics frame, kills the player when it touches the hazard in a view where it is dangerous.
-
-	// Nothing happens while the level changes shape
+	// 1. Nothing happens while the level changes shape
 	auto hazard = GetSelf<Area3D>(instance);
 	if ((bool)hazard->get_meta("frozen", false)) return;
 
-	// Wait out the frames right after a reset
+	// 2. Wait out the frames right after a reset
 	int settle_frames = hazard->get_meta("settle_frames", 0);
 	if (settle_frames > 0)
 	{
@@ -79,12 +81,12 @@ void OnPhysicsProcess(Caller* instance, double _delta)
 		return;
 	}
 
-	// A hazard on the board only hurts where the board is the floor, which is top view, one on the ground hurts everywhere else
+	// 3. A hazard on the board only hurts where the board is the floor, which is top view, one on the ground hurts everywhere else
 	int view = hazard->get_meta("view", VIEW_SIDE);
 	bool dangerous = (bool)hazard->get_meta("on_board", false) ? (view == VIEW_TOP) : (view != VIEW_TOP);
 	if (!dangerous) return;
 
-	// Kill the player if it is touching, telling it the cause so it shows being hurt
+	// 4. Kill the player if it is touching, telling it the cause so it shows being hurt
 	Node* player = FirstBodyInGroup(hazard, "player");
 	if (player) player->call("Kill", DEATH_SPIKES);
 }

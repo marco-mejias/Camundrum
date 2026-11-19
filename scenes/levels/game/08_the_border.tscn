@@ -1,0 +1,133 @@
+[gd_scene format=3 uid="uid://ce0i382nigi6u"]
+
+[ext_resource type="PackedScene" path="res://scenes/elements/block.tscn" id="1_block"]
+[ext_resource type="PackedScene" path="res://scenes/elements/view_block.tscn" id="2_view"]
+[ext_resource type="PackedScene" path="res://scenes/elements/active_platform.tscn" id="3_platform"]
+[ext_resource type="PackedScene" path="res://scenes/elements/board_plate.tscn" id="4_bplate"]
+[ext_resource type="PackedScene" path="res://scenes/elements/plate.tscn" id="5_plate"]
+[ext_resource type="PackedScene" path="res://scenes/elements/exit.tscn" id="6_exit"]
+[ext_resource type="PackedScene" path="res://scenes/elements/crate.tscn" id="7_crate"]
+[ext_resource type="PackedScene" uid="uid://d0cklo3chni14" path="res://scenes/player.tscn" id="8_player"]
+[ext_resource type="PackedScene" path="res://scenes/elements/river_source.tscn" id="9_river"]
+
+[sub_resource type="StandardMaterial3D" id="Material_board"]
+albedo_color = Color(0.17, 0.27, 0.52, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_board"]
+material = SubResource("Material_board")
+size = Vector3(19, 10, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_board"]
+size = Vector3(19, 10, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bound_side"]
+size = Vector3(1, 12, 7)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bound_top"]
+size = Vector3(21, 1, 7)
+
+[node name="TheBorder" type="Node3D" unique_id=720643374]
+metadata/flat_front_z = 4.5
+metadata/starting_view = 2
+
+[node name="Board" type="StaticBody3D" parent="." unique_id=797988888]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, -0.75)
+
+[node name="Mesh" type="MeshInstance3D" parent="Board" unique_id=529167116]
+mesh = SubResource("BoxMesh_board")
+
+[node name="Collision" type="CollisionShape3D" parent="Board" unique_id=1488086235]
+shape = SubResource("BoxShape3D_board")
+
+[node name="BoardBounds" type="StaticBody3D" parent="." unique_id=996792545]
+collision_layer = 2
+collision_mask = 0
+
+[node name="Left" type="CollisionShape3D" parent="BoardBounds" unique_id=740917693]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 4, 2)
+shape = SubResource("BoxShape3D_bound_side")
+
+[node name="Right" type="CollisionShape3D" parent="BoardBounds" unique_id=460277780]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 4, 2)
+shape = SubResource("BoxShape3D_bound_side")
+
+[node name="Top" type="CollisionShape3D" parent="BoardBounds" unique_id=602067997]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.5, 2)
+shape = SubResource("BoxShape3D_bound_top")
+
+[node name="Bottom" type="CollisionShape3D" parent="BoardBounds" unique_id=23792386]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.5, 2)
+shape = SubResource("BoxShape3D_bound_top")
+
+[node name="FloorLeft" parent="." unique_id=283614716 instance=ExtResource("1_block")]
+transform = Transform3D(9, 0, 0, 0, 1, 0, 0, 0, 5, -5, -0.5, 2)
+
+[node name="WallLeft" parent="." unique_id=1604380317 instance=ExtResource("1_block")]
+transform = Transform3D(1, 0, 0, 0, 2, 0, 0, 0, 5, -9, 1, 2)
+
+[node name="FrontColumn" parent="." unique_id=103223016 instance=ExtResource("1_block")]
+transform = Transform3D(1, 0, 0, 0, 3, 0, 0, 0, 2.5, -2, 1.5, 2.75)
+
+[node name="NichePlate" parent="." unique_id=1178316076 instance=ExtResource("5_plate")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 0.5)
+target = NodePath("../Bridge")
+stays_pressed = false
+
+[node name="RailLeft" parent="." unique_id=2000159533 instance=ExtResource("2_view")]
+transform = Transform3D(8, 0, 0, 0, 1, 0, 0, 0, 0.5, -4.5, 0.5, 4.25)
+solid_view = 2
+
+[node name="River" parent="." unique_id=1365361378 instance=ExtResource("9_river")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0522747, 8.655898, -0.48484612)
+flow_speed = 3.5
+change_time = 0.5
+
+[node name="Crate" parent="." unique_id=2117273748 instance=ExtResource("7_crate")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 0.5, 2.5)
+crate_gravity = 35.0
+crate_max_fall = 22.0
+crate_fall_limit = -12.0
+
+[node name="Player" parent="." unique_id=1722201933 instance=ExtResource("8_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.5, 2.5)
+move_speed = 6.0
+ground_acceleration = 70.0
+ground_deceleration = 90.0
+air_acceleration = 40.0
+jump_speed = 9.0
+rise_gravity = 25.0
+fall_gravity = 45.0
+max_fall_speed = 22.0
+jump_cut = 0.45
+coyote_time = 0.1
+jump_buffer_time = 0.12
+fall_limit = -12.0
+push_speed = 3.5
+
+[node name="Bridge" parent="." unique_id=868775245 instance=ExtResource("3_platform")]
+transform = Transform3D(4, 0, 0, 0, 1, 0, 0, 0, 5, 1.5, -0.5, 2)
+starts_active = false
+stays_active = true
+
+[node name="WallRight" parent="." unique_id=993673667 instance=ExtResource("1_block")]
+transform = Transform3D(1, 0, 0, 0, 9, 0, 0, 0, 5, 9, 4.5, 2)
+
+[node name="LedgeE" parent="." unique_id=347748063 instance=ExtResource("1_block")]
+transform = Transform3D(2, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 4.5, 0)
+
+[node name="FinalLedge" parent="." unique_id=119475918 instance=ExtResource("3_platform")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 0)
+starts_active = false
+stays_active = true
+
+[node name="BoardPlate" parent="." unique_id=502731619 instance=ExtResource("4_bplate")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 6.5, -0.5)
+target = NodePath("../FinalLedge")
+stays_pressed = true
+
+[node name="Exit" parent="." unique_id=1218451579 instance=ExtResource("6_exit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 7.5, 0.45)
+goal_view = 2
+
+[node name="Light" type="DirectionalLight3D" parent="." unique_id=698785488]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 10, 0)

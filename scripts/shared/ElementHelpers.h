@@ -1,5 +1,7 @@
 
-/* Camundrum - Shared Element Helpers */
+/* Camundrum - Shared Element Helpers
+ * Small helpers shared by many scripts: boxes, void checks, sounds, shadows and the top view turn.
+ */
 
 #pragma once
 
@@ -29,11 +31,11 @@
 #include <Godot/variant/transform3d.hpp>
 #include <Godot/variant/basis.hpp>
 
-// Bodies
+// ---- Bodies ----
+
+// Find the first body touching an area that belongs to a group, such as "player" or "crate"
 inline godot::Node* FirstBodyInGroup(godot::Area3D* area, const godot::StringName& group)
 {
-	// Purpose: find the first body touching an area that belongs to a group, such as "player" or "crate".
-
 	// Look through everything the area is touching right now
 	godot::TypedArray<godot::Node3D> bodies = area->get_overlapping_bodies();
 	for (int index = 0; index < bodies.size(); index++)
@@ -47,30 +49,30 @@ inline godot::Node* FirstBodyInGroup(godot::Area3D* area, const godot::StringNam
 	// Nothing from that group is touching the area
 	return nullptr;
 }
+
+// Tell whether the player is touching an area
 inline bool HasPlayerInside(godot::Area3D* area)
 {
-	// Purpose: tell whether the player is touching an area.
-
 	// The player is the only node in the "player" group
 	return FirstBodyInGroup(area, "player") != nullptr;
 }
 
-// Sound
+// ---- Sound ----
+
+// Ask the AudioController, the node in the "audio" group, to play one of the game's sounds
 inline void PlaySound(godot::Node* any, int sound)
 {
-	// Purpose: ask the AudioController, the node in the "audio" group, to play one of the game's sounds.
-
 	// Without a tree or an audio module the game simply stays silent
 	if (!any || !any->is_inside_tree()) return;
 	godot::Node* audio = any->get_tree()->get_first_node_in_group("audio");
 	if (audio) audio->call("Play", sound);
 }
 
-// Measuring
+// ---- Measuring ----
+
+// Work out the box a box shape fills in the world right now, slightly shrunk if asked, taking turns and scaling into account
 inline bool ShapeWorldBox(godot::CollisionShape3D* shape, float shrink, godot::AABB& box)
 {
-	// Purpose: work out the box a box shape fills in the world right now, slightly shrunk if asked, taking turns and scaling into account.
-
 	// Only box shapes can be measured
 	if (!shape) return false;
 	godot::Ref<godot::Shape3D> resource = shape->get_shape();
@@ -91,12 +93,12 @@ inline bool ShapeWorldBox(godot::CollisionShape3D* shape, float shrink, godot::A
 	return true;
 }
 
-// Void
+// ---- Void ----
+
+// Find the open hole in the board whose cell holds a point across the board, or nothing
+// Each hole is one cell, one unit square, centred where the hole is; a filled hole is floor again.
 inline godot::Node3D* VoidAt(godot::Node* any, float x, float y)
 {
-	// Purpose: find the open hole in the board whose cell holds a point across the board, or nothing.
-	// Each hole is one cell, one unit square, centred where the hole is; a filled hole is floor again.
-
 	// Look through every hole in the level
 	if (!any || !any->is_inside_tree()) return nullptr;
 	godot::TypedArray<godot::Node> holes = any->get_tree()->get_nodes_in_group("board_hole");
@@ -113,11 +115,11 @@ inline godot::Node3D* VoidAt(godot::Node* any, float x, float y)
 	}
 	return nullptr;
 }
+
+// Tell whether the whole base of a body lies over open holes, which is when it has nothing to rest on in top view
+// The base is sampled every quarter unit, a little inside its edges, so a body only just touching the board still rests on it.
 inline bool FootprintOverVoid(godot::Node3D* body)
 {
-	// Purpose: tell whether the whole base of a body lies over open holes, which is when it has nothing to rest on in top view.
-	// The base is sampled every quarter unit, a little inside its edges, so a body only just touching the board still rests on it.
-
 	// The body's box across the board
 	godot::AABB box;
 	if (!ShapeWorldBox((godot::CollisionShape3D*)body->get_node_or_null("Collision"), 1.0f, box)) return false;
@@ -141,11 +143,11 @@ inline bool FootprintOverVoid(godot::Node3D* body)
 	}
 	return true;
 }
+
+// Plug the one open hole nearest to a body, used when a crate sinks into the void and becomes floor
+// A crate fills a single cell even when it sinks across two of them. Returns the hole it plugged, or nothing.
 inline godot::Node3D* FillVoidUnder(godot::Node3D* body)
 {
-	// Purpose: plug the one open hole nearest to a body, used when a crate sinks into the void and becomes floor.
-	// A crate fills a single cell even when it sinks across two of them. Returns the hole it plugged, or nothing.
-
 	// The middle of the body across the board
 	godot::AABB box;
 	if (!ShapeWorldBox((godot::CollisionShape3D*)body->get_node_or_null("Collision"), 1.0f, box)) return nullptr;
@@ -170,19 +172,19 @@ inline godot::Node3D* FillVoidUnder(godot::Node3D* body)
 	return nearest;
 }
 
-// Raised in top
+// ---- Raised in top ----
+
+// Tell what a body raised by a fan in top view is over: 0 nothing, 1 a fixed solid piece to stand on, 2 a fan
+// Seen from above, being over a wall means standing on top of it; over free board it comes down again.
 inline int RaisedGroundUnder(godot::Node3D* body)
 {
-	// Purpose: tell what a body raised by a fan in top view is over: 0 nothing, 1 a fixed solid piece to stand on, 2 a fan.
-	// Seen from above, being over a wall means standing on top of it; over free board it comes down again.
-
-	// The body's box across the board, a little shrunk so only really standing over something counts
+	// 1. The body's box across the board, a little shrunk so only really standing over something counts
 	godot::AABB own;
 	if (!ShapeWorldBox((godot::CollisionShape3D*)body->get_node_or_null("Collision"), 0.9f, own)) return false;
 	own.position.z = -1000.0f;
 	own.size.z = 2000.0f;
 
-	// Fixed pieces of the level that are solid in this view: blocks, doors, lifts, spikes, view blocks in their view
+	// 2. Fixed pieces of the level that are solid in this view: blocks, doors, lifts, spikes, view blocks in their view
 	godot::TypedArray<godot::Node> pieces = body->get_tree()->get_nodes_in_group("depth");
 	for (int index = 0; index < pieces.size(); index++)
 	{
@@ -196,7 +198,7 @@ inline int RaisedGroundUnder(godot::Node3D* body)
 		if (ShapeWorldBox(shape, 1.0f, box) && own.intersects(box)) return 1;
 	}
 
-	// The fans themselves, which lift whatever stands on them
+	// 3. The fans themselves, which lift whatever stands on them
 	godot::TypedArray<godot::Node> fans = body->get_tree()->get_nodes_in_group("fan");
 	for (int index = 0; index < fans.size(); index++)
 	{
@@ -209,18 +211,18 @@ inline int RaisedGroundUnder(godot::Node3D* body)
 	}
 	return 0;
 }
+
+// Tell whether a body raised by a fan in top view is over anything to stand on up there, a fixed solid piece or a fan
 inline bool OverRaisedGround(godot::Node3D* body)
 {
-	// Purpose: tell whether a body raised by a fan in top view is over anything to stand on up there, a fixed solid piece or a fan.
-
 	// Anything at all counts
 	return RaisedGroundUnder(body) != 0;
 }
+
+// Draw the shadow of a body raised in top view, a dark square on what is below it, slipping off to one side the higher it is
+// height goes from 0, on the ground, to 1, fully up; the shadow is made the first time it is needed.
 inline void ShowRaiseShadow(godot::Node3D* body, float height, float width, float tall)
 {
-	// Purpose: draw the shadow of a body raised in top view, a dark square on what is below it, slipping off to one side the higher it is.
-	// height goes from 0, on the ground, to 1, fully up; the shadow is made the first time it is needed.
-
 	// Find or make the shadow, a flat dark square facing the camera
 	godot::MeshInstance3D* shadow = (godot::MeshInstance3D*)body->get_node_or_null("RaiseShadow");
 	if (!shadow)
@@ -249,13 +251,13 @@ inline void ShowRaiseShadow(godot::Node3D* body, float height, float width, floa
 }
 
 
-// Floor swap
+// ---- Floor swap ----
+
+// Mirror a placement across the slanted plane through the hinge, where the ground meets the board
+// Height above the ground and distance in front of the board trade places, so what stood on the ground now sticks out of the board and the other way round.
+// Bodies that walk or fall, such as the player and crates, keep standing upright and only move.
 inline godot::Transform3D SwapTransform(const godot::Transform3D& placement, float hinge_y, float hinge_z, bool upright)
 {
-	// Purpose: mirror a placement across the slanted plane through the hinge, where the ground meets the board.
-	// Height above the ground and distance in front of the board trade places, so what stood on the ground now sticks out of the board and the other way round.
-	// Bodies that walk or fall, such as the player and crates, keep standing upright and only move.
-
 	// The position trades its height above the hinge for its depth in front of it
 	godot::Vector3 origin = placement.origin;
 	godot::Vector3 moved = godot::Vector3(origin.x, hinge_y + (origin.z - hinge_z), hinge_z + (origin.y - hinge_y));
@@ -271,26 +273,26 @@ inline godot::Transform3D SwapTransform(const godot::Transform3D& placement, flo
 	width_flip.set_column(0, godot::Vector3(-1.0f, 0.0f, 0.0f));
 	return godot::Transform3D(mirror * placement.basis * width_flip, moved);
 }
+
+// Tell whether a piece is a body that walks or falls, which keeps standing upright when the floors swap
 inline bool StaysUpright(godot::Node* piece)
 {
-	// Purpose: tell whether a piece is a body that walks or falls, which keeps standing upright when the floors swap.
-
 	// The player and crates are the character bodies of the level
 	return piece->is_class("CharacterBody3D");
 }
+
+// Tell whether a piece stays where it is when the floors swap: the board, the ground, the board edges, lights and pieces marked swap_fixed
 inline bool IsSwapFixed(godot::Node* node)
 {
-	// Purpose: tell whether a piece stays where it is when the floors swap: the board, the ground, the board edges, lights and pieces marked swap_fixed.
-
 	// Marked by hand, or one of the parts every level is built on
 	if (node->is_in_group("swap_fixed") || node->is_class("Light3D")) return true;
 	godot::String name = node->get_name();
 	return name == "Board" || name == "Floor" || name == "BoardBounds";
 }
+
+// List every piece the floor swap moves, looking inside carriers such as turntables, whose pieces move one by one
 inline void CollectSwapPieces(godot::Node* parent, godot::Node* swapper, godot::TypedArray<godot::Node>& pieces)
 {
-	// Purpose: list every piece the floor swap moves, looking inside carriers such as turntables, whose pieces move one by one.
-
 	// Look at each child of the level
 	for (int index = 0; index < parent->get_child_count(); index++)
 	{
@@ -301,12 +303,12 @@ inline void CollectSwapPieces(godot::Node* parent, godot::Node* swapper, godot::
 	}
 }
 
-// Visuals
+// ---- Visuals ----
+
+// Place the dark disc called Shadow on the ground right below a body, so its height and landing spot can be read in iso
 inline void UpdateDropShadow(godot::CollisionObject3D* body, bool shown)
 {
-	// Purpose: place the dark disc called Shadow on the ground right below a body, so its height and landing spot can be read in iso.
-
-	// Without a shadow piece there is nothing to do, and it is hidden when not wanted
+	// 1. Without a shadow piece there is nothing to do, and it is hidden when not wanted
 	godot::Node3D* shadow = (godot::Node3D*)body->get_node_or_null("Shadow");
 	if (!shadow) return;
 	if (!shown || !body->is_visible_in_tree())
@@ -315,7 +317,7 @@ inline void UpdateDropShadow(godot::CollisionObject3D* body, bool shown)
 		return;
 	}
 
-	// Look straight down for the first solid surface below the body
+	// 2. Look straight down for the first solid surface below the body
 	godot::Vector3 from = body->get_global_position();
 	godot::Vector3 to = from + godot::Vector3(0.0f, -20.0f, 0.0f);
 	godot::TypedArray<godot::RID> ignored;
@@ -328,7 +330,7 @@ inline void UpdateDropShadow(godot::CollisionObject3D* body, bool shown)
 		return;
 	}
 
-	// Lay the disc just above the surface, smaller the higher the body is
+	// 3. Lay the disc just above the surface, smaller the higher the body is
 	godot::Vector3 ground = hit["position"];
 	float height = from.y - ground.y;
 	float size = 1.0f - height / 8.0f;
@@ -340,14 +342,14 @@ inline void UpdateDropShadow(godot::CollisionObject3D* body, bool shown)
 	shadow->set_scale(godot::Vector3(size, 1.0f, size));
 }
 
-// Seen from above
+// ---- Seen from above ----
+
 // In top the camera looks at the board as if it were the floor, so pieces that stand on the ground are drawn turned towards the camera:
 // their up points at the viewer, and the robot's antenna, the flag's pole or the top of the player's head show in the middle. Only the look turns, never the body.
+// Move how far a piece is turned to be seen from above, 0 as in side and iso and 1 in top, over the length of a camera move
+// A negative turn means "just restarted": it jumps straight to where the view wants it.
 inline double StepTopTurn(double turn, bool top, double delta)
 {
-	// Purpose: move how far a piece is turned to be seen from above, 0 as in side and iso and 1 in top, over the length of a camera move.
-	// A negative turn means "just restarted": it jumps straight to where the view wants it.
-
 	// Jump or walk towards the target
 	double wanted = top ? 1.0 : 0.0;
 	if (turn < 0.0) return wanted;
@@ -355,19 +357,19 @@ inline double StepTopTurn(double turn, bool top, double delta)
 	if (turn < wanted) return (turn + step > wanted) ? wanted : turn + step;
 	return (turn - step < wanted) ? wanted : turn - step;
 }
+
+// The angle a piece is turned by for a turn amount, eased so it starts and ends gently like the camera
 inline float TopTurnAngle(double turn)
 {
-	// Purpose: the angle a piece is turned by for a turn amount, eased so it starts and ends gently like the camera.
-
 	// A quarter turn at most
 	double eased = turn * turn * (3.0 - 2.0 * turn);
 	return (float)(eased * 1.5707963267948966);
 }
+
+// Turn a piece's own placement around a pivot so its up points towards the camera by the given angle
+// Pieces on the ground turn around the middle of the cell above it, so seen from above they fill that cell.
 inline godot::Transform3D TurnedForTop(const godot::Transform3D& local, const godot::Vector3& pivot, float angle)
 {
-	// Purpose: turn a piece's own placement around a pivot so its up points towards the camera by the given angle.
-	// Pieces on the ground turn around the middle of the cell above it, so seen from above they fill that cell.
-
 	// Move to the pivot, turn around the left-right axis, move back
 	godot::Transform3D to_pivot(godot::Basis(), pivot);
 	godot::Transform3D turn(godot::Basis(godot::Vector3(1.0f, 0.0f, 0.0f), angle), godot::Vector3());

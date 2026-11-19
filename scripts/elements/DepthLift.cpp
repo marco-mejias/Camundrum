@@ -1,5 +1,7 @@
 
-/* Camundrum - Depth Lift Element */
+/* Camundrum - Depth Lift Element
+ * A lift that moves what stands on it between depth stops (prototype, not used in the game levels).
+ */
 
 // Godot SDK
 #include <Godot/godot.hpp>
@@ -32,11 +34,11 @@ JENOVA_PROPERTY(double, shift_time, 0.6)
 
 // The state of each lift lives in its node's metadata: stops, step, time, stop, target, requested, moving, progress, from_z, shift, riders
 
-// Display
+// ---- Display ----
+
+// Show the number of the stop on the lift's digital display, lighting the segments of that digit
 void ShowStop(Node3D* lift, int stop)
 {
-	// Purpose: show the number of the stop on the lift's digital display, lighting the segments of that digit.
-
 	// The segments a to g that are lit for each digit, from the top clockwise and the middle last
 	const char* lit[10] = { "abcdef", "bc", "abdeg", "abcdg", "bcfg", "acdfg", "acdefg", "abc", "abcdefg", "abcdfg" };
 	int digit = stop % 10;
@@ -59,11 +61,11 @@ void ShowStop(Node3D* lift, int stop)
 	}
 }
 
-// Riding
+// ---- Riding ----
+
+// Tell whether the player stands on the lift, by comparing the player's body with the space above the lift
 bool PlayerOnDeck(Node3D* lift)
 {
-	// Purpose: tell whether the player stands on the lift, by comparing the player's body with the space above the lift.
-
 	// The deck above the lift and the player's body
 	Node3D* player = (Node3D*)lift->get_tree()->get_first_node_in_group("player");
 	if (!player || !player->is_visible_in_tree()) return false;
@@ -73,10 +75,10 @@ bool PlayerOnDeck(Node3D* lift)
 	if (!ShapeWorldBox((CollisionShape3D*)player->get_node_or_null("Collision"), 0.9f, body)) return false;
 	return deck.intersects(body);
 }
+
+// Move the lift and everything riding it by some depth
 void MoveBy(Node3D* lift, double depth)
 {
-	// Purpose: move the lift and everything riding it by some depth.
-
 	// The lift itself
 	Vector3 position = lift->get_global_position();
 	position.z += (float)depth;
@@ -95,12 +97,12 @@ void MoveBy(Node3D* lift, double depth)
 	}
 }
 
-// Commands
+// ---- Commands ----
+
+// Part of the element contract, sends the lift to its next stop when the player presses the interact key standing on it
+// After the last stop it goes back to the first one.
 void OnInteract(Caller* instance)
 {
-	// Purpose: part of the element contract, sends the lift to its next stop when the player presses the interact key standing on it.
-	// After the last stop it goes back to the first one.
-
 	// Only from the deck, and not while a move is asked for or running
 	auto lift = GetSelf<Node3D>(instance);
 	if ((bool)lift->get_meta("moving", false) || (bool)lift->get_meta("requested", false) || !PlayerOnDeck(lift)) return;
@@ -111,29 +113,29 @@ void OnInteract(Caller* instance)
 	lift->set_meta("requested", true);
 	lift->call_deferred("emit_signal", "rotation_requested", lift);
 }
+
+// Let the depth module ask how far in depth the waiting move goes; deeper stops are closer to the board
 double PendingShift(Caller* instance)
 {
-	// Purpose: let the depth module ask how far in depth the waiting move goes; deeper stops are closer to the board.
-
 	// From the current stop to the target one
 	auto lift = GetSelf<Node3D>(instance);
 	int from = lift->get_meta("stop", 0);
 	int to = lift->get_meta("target", 0);
 	return -(double)(to - from) * (double)lift->get_meta("step", 1.0);
 }
+
+// Let the GameManager refuse the move because something is in the way
 void CancelTurn(Caller* instance)
 {
-	// Purpose: let the GameManager refuse the move because something is in the way.
-
 	// Stay at the current stop
 	auto lift = GetSelf<Node3D>(instance);
 	lift->set_meta("target", lift->get_meta("stop", 0));
 	lift->set_meta("requested", false);
 }
+
+// Let the GameManager start the move once it has been allowed, the physics routine carries it out
 void StartTurn(Caller* instance)
 {
-	// Purpose: let the GameManager start the move once it has been allowed, the physics routine carries it out.
-
 	// Note where the move starts and how far it goes
 	auto lift = GetSelf<Node3D>(instance);
 	lift->set_meta("shift", PendingShift(instance));
@@ -143,12 +145,12 @@ void StartTurn(Caller* instance)
 	lift->set_meta("moving", true);
 }
 
-// Contract
+// ---- Contract ----
+
+// Part of the element contract, sends the lift back to its first stop when the level restarts
+// Its position is restored by the depth module, with every other tracked piece.
 void Reset(Caller* instance)
 {
-	// Purpose: part of the element contract, sends the lift back to its first stop when the level restarts.
-	// Its position is restored by the depth module, with every other tracked piece.
-
 	// Stop any move and show stop 0
 	auto lift = GetSelf<Node3D>(instance);
 	lift->set_meta("stop", 0);
@@ -159,41 +161,41 @@ void Reset(Caller* instance)
 	ShowStop(lift, 0);
 }
 
-// Routines
+// ---- Routines ----
+
+// Called once the node and its children are in the tree, prepares the lift and its signals
 void OnReady(Caller* instance)
 {
-	// Purpose: called once the node and its children are in the tree, prepares the lift and its signals.
-
-	// Copy the inspector settings onto the node, where every function can read them safely
+	// 1. Copy the inspector settings onto the node, where every function can read them safely
 	auto lift = GetSelf<Node3D>(instance);
 	lift->set_meta("stops", stop_count < 2 ? 2 : (stop_count > 10 ? 10 : stop_count));
 	lift->set_meta("step", stop_step);
 	lift->set_meta("time", shift_time > 0.05 ? shift_time : 0.05);
 
-	// The same signals as a turntable, so the GameManager handles both the same way
+	// 2. The same signals as a turntable, so the GameManager handles both the same way
 	if (!lift->has_signal("rotation_requested")) lift->add_user_signal("rotation_requested");
 	if (!lift->has_signal("busy_finished")) lift->add_user_signal("busy_finished");
 
-	// Start at the first stop
+	// 3. Start at the first stop
 	lift->set_meta("stop", 0);
 	lift->set_meta("target", 0);
 	lift->set_meta("requested", false);
 	lift->set_meta("moving", false);
 	ShowStop(lift, 0);
 
-	// The deck only notices actors such as the player and crates
+	// 4. The deck only notices actors such as the player and crates
 	CollisionObject3D* deck = (CollisionObject3D*)lift->get_node_or_null("Deck");
 	if (deck) deck->set_collision_mask(LAYER_ACTORS);
 }
+
+// Called every physics frame, carries out a move the GameManager allowed, with a gentle start and end
 void OnPhysicsProcess(Caller* instance, double _delta)
 {
-	// Purpose: called every physics frame, carries out a move the GameManager allowed, with a gentle start and end.
-
-	// Nothing to do while not moving
+	// 1. Nothing to do while not moving
 	auto lift = GetSelf<Node3D>(instance);
 	if (!(bool)lift->get_meta("moving", false)) return;
 
-	// Advance and place the lift and its riders where they should be now
+	// 2. Advance and place the lift and its riders where they should be now
 	double progress = (double)lift->get_meta("progress", 1.0) + _delta / (double)lift->get_meta("time", 0.6);
 	if (progress > 1.0) progress = 1.0;
 	lift->set_meta("progress", progress);
@@ -201,7 +203,7 @@ void OnPhysicsProcess(Caller* instance, double _delta)
 	double wanted = (double)lift->get_meta("from_z", 0.0) + (double)lift->get_meta("shift", 0.0) * eased;
 	MoveBy(lift, wanted - (double)lift->get_global_position().z);
 
-	// At the end, show the new stop and let the GameManager settle the level and release the world
+	// 3. At the end, show the new stop and let the GameManager settle the level and release the world
 	if (progress < 1.0) return;
 	lift->set_meta("moving", false);
 	lift->set_meta("stop", lift->get_meta("target", 0));

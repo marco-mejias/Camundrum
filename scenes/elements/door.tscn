@@ -1,9 +1,14 @@
 [gd_scene format=3]
 
+[ext_resource type="Shader" path="res://shaders/block.gdshader" id="90_block_shader"]
+
 [ext_resource type="Script" path="res://scripts/elements/Door.cpp" id="1_door"]
 
-[sub_resource type="StandardMaterial3D" id="Material_door"]
-albedo_color = Color(0.58, 0.3, 0.86, 1)
+[sub_resource type="ShaderMaterial" id="Material_door"]
+shader = ExtResource("90_block_shader")
+shader_parameter/albedo = Color(0.58, 0.3, 0.86, 1)
+shader_parameter/mesh_size = Vector3(1, 1, 1)
+shader_parameter/seam_dark = 0.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_door"]
 material = SubResource("Material_door")

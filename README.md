@@ -4,7 +4,9 @@ A 3D puzzle platformer about one level read from three cameras: **side**, **top*
 Every switch of camera changes the rules of the world. In side the level is a classic platformer, in top the back wall becomes the floor of a top-down game, and in iso the real 3D depth comes back.
 The whole game logic is written in C++ through the **Jenova Framework**, which runs native C++ scripts inside Godot 4.7. This project was a deep dive into gameplay architecture, level design and game feel, built around one strong idea: depth is flattened when you look from the side or from above, but the world never forgets it.
 
-<!-- Add a gameplay GIF here: drag the file into a GitHub issue or the README editor and paste the link -->
+![The same level in side, top and iso](media/views.gif)
+
+**[Download the latest Windows build](https://github.com/marco-mejias/Camundrum/releases/latest)** (unzip and run `Camundrum.exe`, no installation needed).
 
 ## 🛠️ Technologies
 
@@ -17,9 +19,13 @@ The whole game logic is written in C++ through the **Jenova Framework**, which r
 
 ---
 
-## 💡 My Core Contributions
+## 💡 How It Was Built
 
-I designed the game and built its systems, levels and feel. My main responsibilities included:
+Camundrum is my own project: I came up with the concept and designed every mechanic, the rules each one follows in each of the three views, and all eight levels. I directed how the game should look and feel, played and tested it constantly, found the bugs and exploits, and decided how each one should be fixed.
+
+I used **Claude (Anthropic's AI assistant, through Claude Code)** as a programming assistant: it wrote sections of the C++ code and some of the visual effects from my designs and instructions, and every change went through my review and playtesting before it stayed. The design documents in [`docs/`](docs) record the process: the rules as they were agreed, the decisions taken along the way and why.
+
+The main systems of the game:
 
 ### 1. Three Views, One World (Depth System)
 The heart of the game is a depth system that lets the player switch camera at any time, even mid-air.
@@ -38,14 +44,20 @@ Each mechanic is its own reusable scene and C++ script, following a shared contr
 * **Fans** that push you away from the board in iso, blow you into the void in side, and work as a jump button in top that lets you climb onto walls.
 * **Real holes in the board** that only matter when something lives on that floor.
 * **View blocks and view flags**, solid or counting only in one camera.
-* **Floor swaps, depth lifts, turntables, plates, levers, wall buttons and doors**.
+* **A robot** that drives itself and, in iso, keeps the line of the last flat view it came from.
+* **Activatable platforms** that wait as see-through ghosts until a plate turns them solid.
+* **Plates on the ground and on the board, and doors**.
+* Prototypes kept in the sandbox: floor swaps, depth lifts, turntables, levers, wall buttons and spikes.
+
+![The robot's circuit](media/robot.gif) ![The wind cannon](media/cannon.gif)
 
 ### 4. Camera, Levels & Menus
 A camera controller animates between the three cameras and frames every level automatically from its size.
-A level controller loads levels in order, unlocks them as you progress and saves your progress, while the UI handles the main menu, level select, pause and level-complete screens.
-An audio controller plays the game's sound effects on view switches, jumps, landings, plates, doors and deaths.
+A level controller loads levels in order, unlocks them as you progress and saves your progress. The menus are animated (a waving title, pieces that come in one by one, buttons that react) and include an options screen for volumes, screen shake and fullscreen, saved between sessions.
+An audio controller plays the game's sound effects on separate Effects and Interface buses.
+Behind every level, neon pyramids drift and change with the view: whole pyramids in iso, rolling triangles in side, tips seen from above in top. In top the pieces themselves turn so they are seen from above.
 
-<!-- Add screenshots of the three views here -->
+![Menus](media/menu.gif)
 
 ---
 
@@ -89,6 +101,10 @@ Every puzzle is built on reading the same space in three different ways:
 Levels are single scenes built on a 1-unit grid from reusable element scenes, starting from a level template.
 They are played in order from the level select and unlock one after another. Each level can choose its starting view and goal flags can belong to one view only, which works as a way to limit how a level is solved.
 
+The eight levels: **First Steps**, **Crate Stairs**, **Plate and Door**, **Wind Cannon**, **River and Fan**, **Glass Lift**, **Robot Steps** and **The Border**. The test rooms used while building each mechanic are kept in `scenes/levels/sandbox`.
+
+![River and fan](media/river.gif) ![The fan as a jump in top](media/fan.gif)
+
 ### 🎮 Controls
 
 | Input | Action |
@@ -100,6 +116,7 @@ They are played in order from the level select and unlock one after another. Eac
 | E | Interact |
 | R | Restart level |
 | Esc | Pause |
+| F11 | Fullscreen on / off |
 
 ---
 
@@ -115,3 +132,13 @@ They are played in order from the level select and unlock one after another. Eac
 3. Open Jenova's **Package Manager** and install the packages the project lists: *Microsoft Compiler Bridge (MSVC-Bridge)* and *Godot SDK 4.7.0 (MSVC)*.
 4. Click **Jenova → Build** to compile the C++ scripts.
 5. Run the project (F5). The main scene is `scenes/game.tscn`.
+
+To export, use **Project → Export → Windows Desktop**. If Godot cannot find its export template, point *Custom Template → Release* to `windows_release_x86_64.exe` in the `editor_data/export_templates` folder of the Jenova Godot build.
+
+---
+
+## 📚 Documentation
+
+* [`docs/DESIGN.md`](docs/DESIGN.md): rules of the three views, every mechanic and how to make levels.
+* [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): the modules, what each one owns and how they talk.
+* [`docs/GAMEFEEL.md`](docs/GAMEFEEL.md): how the movement, camera, menus and visuals were tuned.

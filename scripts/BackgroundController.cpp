@@ -1,5 +1,7 @@
 
-/* Camundrum - Background Controller */
+/* Camundrum - Background Controller
+ * Draws the neon pyramids behind every level, shaped by the active view.
+ */
 
 // Godot SDK
 #include <Godot/godot.hpp>
@@ -42,17 +44,16 @@ struct Pyramid
 	float spin = 0.0f;
 };
 static std::vector<Pyramid> pyramids;
+// A random number between two values, for scattering the pyramids
 static float Random(float low, float high)
 {
-	// Purpose: a random number between two values, for scattering the pyramids.
-
 	// Plain rand is enough for decoration
 	return low + (high - low) * (float)rand() / (float)RAND_MAX;
 }
+
+// Build the edges of a square pyramid as lines, one unit wide and tall, its middle at the origin and its tip pointing up
 static Ref<ArrayMesh> PyramidLines()
 {
-	// Purpose: build the edges of a square pyramid as lines, one unit wide and tall, its middle at the origin and its tip pointing up.
-
 	// The four corners of the base and the tip
 	float h = 0.5f;
 	Vector3 corners[4] = { Vector3(-h, -h, -h), Vector3(h, -h, -h), Vector3(h, -h, h), Vector3(-h, -h, h) };
@@ -89,60 +90,60 @@ JENOVA_PROPERTY(double, brightness, 3.0)
 // It follows the camera, so it is always behind the level and fills the screen, and it changes with the same short blend as the camera.
 
 // State
-Node3D* background = nullptr;
-MultiMeshInstance3D* drawn = nullptr;
-int target_view = VIEW_SIDE;
-double iso_amount = 0.0;
-double top_amount = 0.0;
-double drift_copy = 0.08;
+Node3D* background = nullptr; // This node, the pyramids are drawn under it
+MultiMeshInstance3D* drawn = nullptr; // All the pyramids in a single draw
+int target_view = VIEW_SIDE; // The view the pyramids are changing towards
+double iso_amount = 0.0; // 0 to 1, how far into the iso look they are
+double top_amount = 0.0; // 0 to 1, how far into the top look they are
+double drift_copy = 0.08; // Copy of drift_speed, safe to read every frame
 
-// Blending
+// ---- Blending ----
+
+// Move one of the view blends towards on or off over the length of a camera move
 double StepAmount(double amount, bool wanted, double delta)
 {
-	// Purpose: move one of the view blends towards on or off over the length of a camera move.
-
 	// Walk towards 1 or 0
 	double goal = wanted ? 1.0 : 0.0;
 	double step = delta / 0.35;
 	if (amount < goal) return (amount + step > goal) ? goal : amount + step;
 	return (amount - step < goal) ? goal : amount - step;
 }
+
+// Soften a blend so it starts and ends gently, like the camera
 double Eased(double amount)
 {
-	// Purpose: soften a blend so it starts and ends gently, like the camera.
-
 	// Smooth step
 	return amount * amount * (3.0 - 2.0 * amount);
 }
 
-// Commands
+// ---- Commands ----
+
+// Let the GameManager tell the background which view is coming, so the pyramids change with the camera
 void ShowView(int view)
 {
-	// Purpose: let the GameManager tell the background which view is coming, so the pyramids change with the camera.
-
 	// The blends walk there frame by frame
 	target_view = view;
 }
+
+// Let the GameManager put the background straight into a view, when a level starts or restarts
 void SnapView(int view)
 {
-	// Purpose: let the GameManager put the background straight into a view, when a level starts or restarts.
-
 	// No blend
 	target_view = view;
 	iso_amount = view == VIEW_ISO ? 1.0 : 0.0;
 	top_amount = view == VIEW_TOP ? 1.0 : 0.0;
 }
 
-// Routines
+// ---- Routines ----
+
+// Called once the node is in the tree, scatters the pyramids and builds the one drawing that holds them all
 void OnReady(Caller* instance)
 {
-	// Purpose: called once the node is in the tree, scatters the pyramids and builds the one drawing that holds them all.
-
-	// Keep this node, it is placed at the world's origin and draws in world space
+	// 1. Keep this node, it is placed at the world's origin and draws in world space
 	background = GetSelf<Node3D>(instance);
 	drift_copy = drift_speed;
 
-	// White neon lines added over the background, brighter than anything in the level so only they glow
+	// 2. White neon lines added over the background, brighter than anything in the level so only they glow
 	Ref<ShaderMaterial> material;
 	material.instantiate();
 	Ref<Shader> shader;
@@ -151,7 +152,7 @@ void OnReady(Caller* instance)
 	material->set_shader(shader);
 	material->set_shader_parameter("brightness", brightness);
 
-	// One instance per pyramid
+	// 3. One instance per pyramid
 	Ref<ArrayMesh> mesh = PyramidLines();
 	mesh->surface_set_material(0, material);
 	Ref<MultiMesh> many;
@@ -165,7 +166,7 @@ void OnReady(Caller* instance)
 	drawn->set_cast_shadows_setting(GeometryInstance3D::SHADOW_CASTING_SETTING_OFF);
 	background->add_child(drawn);
 
-	// Scatter them: small ones, a few a bit bigger, all slowly drifting right and turning at their own pace
+	// 4. Scatter them: small ones, a few a bit bigger, all slowly drifting right and turning at their own pace
 	pyramids.clear();
 	for (int index = 0; index < pyramid_count; index++)
 	{
@@ -180,26 +181,26 @@ void OnReady(Caller* instance)
 		pyramids.push_back(pyramid);
 	}
 }
+
+// Called when the node leaves the scene tree, drops every node reference
 void OnDestroy(Caller* instance)
 {
-	// Purpose: called when the node leaves the scene tree, drops every node reference.
-
 	// Forget the nodes and the pyramids
 	background = nullptr;
 	drawn = nullptr;
 	pyramids.clear();
 }
+
+// Called every frame, drifts and turns the pyramids and places them behind whatever the camera shows
 void OnProcess(Caller* instance, double _delta)
 {
-	// Purpose: called every frame, drifts and turns the pyramids and places them behind whatever the camera shows.
-
-	// Nothing to place without the drawing or a camera
+	// 1. Nothing to place without the drawing or a camera
 	if (!drawn || !background) return;
 	Camera3D* camera = background->get_viewport()->get_camera_3d();
 	Ref<MultiMesh> many = drawn->get_multimesh();
 	if (!camera || many.is_null()) return;
 
-	// Blend towards the view on its way in
+	// 2. Blend towards the view on its way in
 	iso_amount = StepAmount(iso_amount, target_view == VIEW_ISO, _delta);
 	top_amount = StepAmount(top_amount, target_view == VIEW_TOP, _delta);
 	float iso = (float)Eased(iso_amount);
@@ -207,10 +208,10 @@ void OnProcess(Caller* instance, double _delta)
 	float side = 1.0f - iso - top;
 	if (side < 0.0f) side = 0.0f;
 
-	// The side camera looks slightly down, so in side the pyramids are pressed flat in depth to read as clean triangles
+	// 3. The side camera looks slightly down, so in side the pyramids are pressed flat in depth to read as clean triangles
 	Basis press = Basis::from_scale(Vector3(1.0f, 1.0f, 1.0f - 0.97f * side));
 
-	// The screen as the camera sees it: its size across and up, its axes in the world
+	// 4. The screen as the camera sees it: its size across and up, its axes in the world
 	Transform3D view = camera->get_global_transform();
 	Vector3 right = view.basis.get_column(0).normalized();
 	Vector3 up = view.basis.get_column(1).normalized();
@@ -219,7 +220,7 @@ void OnProcess(Caller* instance, double _delta)
 	float half_up = (float)camera->get_size() * 0.5f;
 	float half_across = half_up * (screen.y > 0.0f ? screen.x / screen.y : 1.7777f);
 
-	// Each pyramid drifts right across the screen and comes back in from the left
+	// 5. Each pyramid drifts right across the screen and comes back in from the left
 	for (int index = 0; index < (int)pyramids.size() && index < many->get_instance_count(); index++)
 	{
 		Pyramid& pyramid = pyramids[index];

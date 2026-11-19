@@ -1,5 +1,7 @@
 
-/* Camundrum - Board Hole Element */
+/* Camundrum - Board Hole Element
+ * One cell of void in the board: a real opening in top, only seen in side and iso, plugged by a crate.
+ */
 
 // Godot SDK
 #include <Godot/godot.hpp>
@@ -20,17 +22,17 @@ JENOVA_SCRIPT_BEGIN
 // The state of each hole lives in its node's metadata: filled, cut (whether the board around it was really opened), wall_above (whether board continues above it)
 // A hole is one cell of the board, one unit square; the player and crates check the holes themselves (VoidAt, FootprintOverVoid)
 
-// Look
+// ---- Look ----
+
+// Draw the hole as it is: an opening in the board with a dark pit behind it, or plugged by a crate
+// Where the board could not be opened, the flat marker used in the editor stays as the look of the hole.
 void ShowState(Node3D* hole)
 {
-	// Purpose: draw the hole as it is: an opening in the board with a dark pit behind it, or plugged by a crate.
-	// Where the board could not be opened, the flat marker used in the editor stays as the look of the hole.
-
-	// Read the state
+	// 1. Read the state
 	bool filled = hole->get_meta("filled", false);
 	bool cut = hole->get_meta("cut", false);
 
-	// The editor marker only shows where the board is whole, the pit only where it is open
+	// 2. The editor marker only shows where the board is whole, the pit only where it is open
 	Node* rim = hole->get_node_or_null("Rim");
 	Node* marker = hole->get_node_or_null("Marker");
 	Node* pit = hole->get_node_or_null("Pit");
@@ -41,25 +43,25 @@ void ShowState(Node3D* hole)
 	if (pit) pit->set("visible", cut && !filled);
 	if (plug) plug->set("visible", filled);
 
-	// Where the board goes on above the hole, a strip of its inner wall shows, so it reads as deep even seen straight on
+	// 3. Where the board goes on above the hole, a strip of its inner wall shows, so it reads as deep even seen straight on
 	if (inner_wall) inner_wall->set("visible", cut && !filled && (bool)hole->get_meta("wall_above", false));
 }
 
-// Commands
+// ---- Commands ----
+
+// Let a crate that sank into the hole plug it, so it is floor again
 void Fill(Caller* instance)
 {
-	// Purpose: let a crate that sank into the hole plug it, so it is floor again.
-
 	// Store and show it
 	auto hole = GetSelf<Node3D>(instance);
 	hole->set_meta("filled", true);
 	ShowState(hole);
 }
+
+// Let the LevelController say that the board around this hole was really opened, so the pit is shown instead of the marker
+// It also says whether the board goes on right above the hole, as a number because calls between scripts cannot carry a bool.
 void MarkCut(Caller* instance, int wall_above)
 {
-	// Purpose: let the LevelController say that the board around this hole was really opened, so the pit is shown instead of the marker.
-	// It also says whether the board goes on right above the hole, as a number because calls between scripts cannot carry a bool.
-
 	// Store and show it
 	auto hole = GetSelf<Node3D>(instance);
 	hole->set_meta("cut", true);
@@ -67,22 +69,22 @@ void MarkCut(Caller* instance, int wall_above)
 	ShowState(hole);
 }
 
-// Contract
+// ---- Contract ----
+
+// Part of the element contract, opens the hole again when the level restarts
 void Reset(Caller* instance)
 {
-	// Purpose: part of the element contract, opens the hole again when the level restarts.
-
 	// Open it
 	auto hole = GetSelf<Node3D>(instance);
 	hole->set_meta("filled", false);
 	ShowState(hole);
 }
 
-// Routines
+// ---- Routines ----
+
+// Called once the node is in the tree, starts the hole open, drawn with its marker until the board is opened
 void OnReady(Caller* instance)
 {
-	// Purpose: called once the node is in the tree, starts the hole open, drawn with its marker until the board is opened.
-
 	// Open, and not cut yet
 	auto hole = GetSelf<Node3D>(instance);
 	hole->set_meta("filled", false);

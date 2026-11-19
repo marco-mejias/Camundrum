@@ -1,5 +1,7 @@
 
-/* Camundrum - Robot Element */
+/* Camundrum - Robot Element
+ * A crate that drives itself; in iso it keeps the line of the last flat view.
+ */
 
 // Godot SDK
 #include <Godot/godot.hpp>
@@ -32,28 +34,32 @@ JENOVA_PROPERTY(double, move_speed, 2.0)
 // Two senses are kept, one for left and right (sign_x) and one shared by top's up and down and iso's depth (sign_v): going up in top is going towards the camera in iso.
 // The state of each robot lives in its node's metadata: the crate body's, plus starts_on, starts_forward, move_speed, on, sign_x, sign_v, iso_axis (0 left and right, 2 depth), blink
 
-// Motor
+// ---- Motor ----
+
+// The velocity the robot drives itself at in the current view, or nothing while it is off
 Vector3 DriveVelocity(CharacterBody3D* robot)
 {
-	// Purpose: the velocity the robot drives itself at in the current view, or nothing while it is off.
-
-	// Off, it is just a crate that cannot be pushed
+	// 1. Off, it is just a crate that cannot be pushed
 	if (!(bool)robot->get_meta("on", false)) return Vector3(0.0f, 0.0f, 0.0f);
+
+	// 2. Its wheels only drive on the ground: in side and iso, while it falls it drops straight down and drives on once it lands
+	int view_now = robot->get_meta("view", VIEW_SIDE);
+	if (view_now != VIEW_TOP && !robot->is_on_floor()) return Vector3(0.0f, 0.0f, 0.0f);
 	float speed = (float)(double)robot->get_meta("move_speed", 2.0);
 	float sign_x = (float)(double)robot->get_meta("sign_x", 1.0);
 	float sign_v = (float)(double)robot->get_meta("sign_v", 1.0);
 
-	// Each view has its own line, iso takes the one of the last flat view
+	// 3. Each view has its own line, iso takes the one of the last flat view
 	int view = robot->get_meta("view", VIEW_SIDE);
 	if (view == VIEW_TOP) return Vector3(0.0f, sign_v * speed, 0.0f);
 	if (view == VIEW_SIDE) return Vector3(sign_x * speed, 0.0f, 0.0f);
 	if ((int)robot->get_meta("iso_axis", 2) == 2) return Vector3(0.0f, 0.0f, sign_v * speed);
 	return Vector3(sign_x * speed, 0.0f, 0.0f);
 }
+
+// Send the robot back the other way along the line it is driving on, after it bumped into something
 void TurnAround(CharacterBody3D* robot)
 {
-	// Purpose: send the robot back the other way along the line it is driving on, after it bumped into something.
-
 	// Flip the sense that the current line uses
 	int view = robot->get_meta("view", VIEW_SIDE);
 	bool vertical = view == VIEW_TOP || (view == VIEW_ISO && (int)robot->get_meta("iso_axis", 2) == 2);
@@ -61,11 +67,11 @@ void TurnAround(CharacterBody3D* robot)
 	robot->set_meta(key, -(double)robot->get_meta(key, 1.0));
 }
 
-// Look
+// ---- Look ----
+
+// Light the tip of the antenna while the robot runs, blinking, and leave it dark while it is off
 void ShowAntenna(CharacterBody3D* robot, double delta)
 {
-	// Purpose: light the tip of the antenna while the robot runs, blinking, and leave it dark while it is off.
-
 	// The lit tip sits over the dark one, and only shows while on
 	Node3D* lit = (Node3D*)robot->get_node_or_null("Mesh/TipLit");
 	if (!lit) return;
@@ -81,10 +87,10 @@ void ShowAntenna(CharacterBody3D* robot, double delta)
 	robot->set_meta("blink", blink);
 	lit->set_visible(blink < 0.38);
 }
+
+// Turn the robot's look towards the camera in top, so its head and antenna are seen from above, and back in the other views
 void ShowFromAbove(CharacterBody3D* robot, double delta)
 {
-	// Purpose: turn the robot's look towards the camera in top, so its head and antenna are seen from above, and back in the other views.
-
 	// The body's own look keeps its size (it shrinks when sinking) and its forward lift when raised; the turn goes on top
 	Node3D* mesh = (Node3D*)robot->get_node_or_null("Mesh");
 	if (!mesh) return;
@@ -96,10 +102,10 @@ void ShowFromAbove(CharacterBody3D* robot, double delta)
 	look.origin = lifted;
 	mesh->set_transform(look);
 }
+
+// Switch the robot on or off, heard when it changes
 void SwitchTo(CharacterBody3D* robot, bool on)
 {
-	// Purpose: switch the robot on or off, heard when it changes.
-
 	// Only a real change is heard, and the blink starts lit
 	if ((bool)robot->get_meta("on", false) == on) return;
 	robot->set_meta("on", on);
@@ -107,11 +113,11 @@ void SwitchTo(CharacterBody3D* robot, bool on)
 	PlaySound(robot, SOUND_BUTTON);
 }
 
-// Use
+// ---- Use ----
+
+// Tell whether the player is right next to the robot, close enough to switch it with the interact key
 bool PlayerNextTo(CharacterBody3D* robot)
 {
-	// Purpose: tell whether the player is right next to the robot, close enough to switch it with the interact key.
-
 	// The robot's box, grown by half a cell on every side
 	AABB own;
 	if (!CrateBody::Box(robot, own)) return false;
@@ -129,92 +135,92 @@ bool PlayerNextTo(CharacterBody3D* robot)
 	return false;
 }
 
-// Raised in top
+// ---- Raised in top ----
+
+// Let a fan raise the robot in top view, like a crate
+// The parameter is a number because calls between scripts cannot carry a bool.
 void SetRaised(Caller* instance, int raised)
 {
-	// Purpose: let a fan raise the robot in top view, like a crate.
-	// The parameter is a number because calls between scripts cannot carry a bool.
-
 	// Hand it to the shared body
 	CrateBody::SetRaised(GetSelf<CharacterBody3D>(instance), raised);
 }
+
+// Blow the robot off the level in side view, like a crate
 void DropIntoVoid(Caller* instance)
 {
-	// Purpose: blow the robot off the level in side view, like a crate.
-
 	// Hand it to the shared body
 	CrateBody::DropIntoVoid(GetSelf<CharacterBody3D>(instance));
 }
 
-// Commands
+// ---- Commands ----
+
+// Let a river segment or a fan carry the robot this frame, like a crate
 void SetCurrent(Caller* instance, double x, double y, double z)
 {
-	// Purpose: let a river segment or a fan carry the robot this frame, like a crate.
-
 	// Hand it to the shared body
 	CrateBody::SetCurrent(GetSelf<CharacterBody3D>(instance), x, y, z);
 }
+
+// Destroy the robot, when it falls out of the level or sinks into a hole
 void Break(Caller* instance)
 {
-	// Purpose: destroy the robot, when it falls out of the level or sinks into a hole.
-
 	// Take it out of the level until the next restart
 	CrateBody::SetBroken(GetSelf<CharacterBody3D>(instance), true);
 }
+
+// Let a plate, lever or button switch the robot on
 void Activate(Caller* instance)
 {
-	// Purpose: let a plate, lever or button switch the robot on.
-
 	// On
 	SwitchTo(GetSelf<CharacterBody3D>(instance), true);
 }
+
+// Let a plate, lever or button switch the robot off
 void Deactivate(Caller* instance)
 {
-	// Purpose: let a plate, lever or button switch the robot off.
-
 	// Off
 	SwitchTo(GetSelf<CharacterBody3D>(instance), false);
 }
+
+// Let a lever or button flip the robot between on and off
 void Toggle(Caller* instance)
 {
-	// Purpose: let a lever or button flip the robot between on and off.
-
 	// Flip
 	auto robot = GetSelf<CharacterBody3D>(instance);
 	SwitchTo(robot, !(bool)robot->get_meta("on", false));
 }
 
-// Contract
+// ---- Contract ----
+
+// Part of the element contract, gives the robot the physics rules of the new view and picks its line for iso
 void OnViewChanged(Caller* instance, int view)
 {
-	// Purpose: part of the element contract, gives the robot the physics rules of the new view and picks its line for iso.
-
 	// A flat view decides which line the robot follows when iso comes back
 	auto robot = GetSelf<CharacterBody3D>(instance);
 	if (view == VIEW_TOP) robot->set_meta("iso_axis", 2);
 	if (view == VIEW_SIDE) robot->set_meta("iso_axis", 0);
 	CrateBody::ViewChanged(robot, view);
 }
+
+// Part of the element contract, switches the robot on or off when the player presses the interact key next to it
 void OnInteract(Caller* instance)
 {
-	// Purpose: part of the element contract, switches the robot on or off when the player presses the interact key next to it.
-
 	// Only a player at its side can use it
 	auto robot = GetSelf<CharacterBody3D>(instance);
 	if ((bool)robot->get_meta("broken", false) || !PlayerNextTo(robot)) return;
 	SwitchTo(robot, !(bool)robot->get_meta("on", false));
 }
+
+// Part of the element contract, pauses the robot while the level changes shape
 void SetFrozen(Caller* instance, int frozen)
 {
-	// Purpose: part of the element contract, pauses the robot while the level changes shape.
-
 	// Store the state, it drives on where it left off
 	GetSelf<CharacterBody3D>(instance)->set_meta("frozen", frozen != 0);
 }
+
+// Part of the element contract, returns the robot to its starting state when the level restarts
 void Reset(Caller* instance)
 {
-	// Purpose: part of the element contract, returns the robot to its starting state when the level restarts.
-
 	// The body comes back, the motor goes back to its inspector settings; depth is the line until a flat view says otherwise
 	auto robot = GetSelf<CharacterBody3D>(instance);
 	CrateBody::Reset(robot);
@@ -227,11 +233,11 @@ void Reset(Caller* instance)
 	robot->set_meta("top_turn", -1.0);
 }
 
-// Routines
+// ---- Routines ----
+
+// Called once the node and its children are in the tree, prepares the robot
 void OnReady(Caller* instance)
 {
-	// Purpose: called once the node and its children are in the tree, prepares the robot.
-
 	// The crate body, with the usual crate settings
 	auto robot = GetSelf<CharacterBody3D>(instance);
 	CrateBody::Ready(robot, 35.0, 22.0, -12.0);
@@ -247,10 +253,10 @@ void OnReady(Caller* instance)
 	robot->set_meta("iso_axis", 2);
 	robot->set_meta("blink", 0.0);
 }
+
+// Called every physics frame, drives the robot along its line and turns it around when something stops it
 void OnPhysicsProcess(Caller* instance, double _delta)
 {
-	// Purpose: called every physics frame, drives the robot along its line and turns it around when something stops it.
-
 	// Move with the body's rules plus its own drive
 	auto robot = GetSelf<CharacterBody3D>(instance);
 	Vector3 drive = DriveVelocity(robot);

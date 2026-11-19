@@ -12,3 +12,6 @@
 
 # Exported game builds
 builds/
+
+# Jenova editor templates for new scripts, reinstalled with Jenova
+/Jenova/Templates/

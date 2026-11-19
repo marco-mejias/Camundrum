@@ -1,5 +1,7 @@
 
-/* Camundrum - Wall Button Element */
+/* Camundrum - Wall Button Element
+ * A button on a wall that can be pressed in side (prototype, not used in the game levels).
+ */
 
 // Godot SDK
 #include <Godot/godot.hpp>
@@ -26,11 +28,11 @@ JENOVA_PROPERTY(NodePath, target, NodePath())
 
 // The state of each button lives in its node's metadata: target, on, view
 
-// Look
+// ---- Look ----
+
+// Show the button raised when off and pushed in when on
 void ShowState(Area3D* button, bool on)
 {
-	// Purpose: show the button raised when off and pushed in when on.
-
 	// Swap the raised cap for the pushed one
 	Node3D* cap_off = (Node3D*)button->get_node_or_null("CapOff");
 	Node3D* cap_on = (Node3D*)button->get_node_or_null("CapOn");
@@ -38,11 +40,11 @@ void ShowState(Area3D* button, bool on)
 	if (cap_on) cap_on->set_visible(on);
 }
 
-// Reach
+// ---- Reach ----
+
+// Tell whether the player is close enough to press the button in the active view
 bool PlayerInReach(Area3D* button)
 {
-	// Purpose: tell whether the player is close enough to press the button in the active view.
-
 	// In iso the player has to really stand in front of the button
 	if ((int)button->get_meta("view", VIEW_SIDE) == VIEW_ISO) return HasPlayerInside(button);
 
@@ -56,57 +58,57 @@ bool PlayerInReach(Area3D* button)
 	return point.x >= low.x && point.x <= high.x && point.y >= low.y && point.y <= high.y;
 }
 
-// Contract
+// ---- Contract ----
+
+// Part of the element contract, presses or releases the button when the player uses the interact key next to it
 void OnInteract(Caller* instance)
 {
-	// Purpose: part of the element contract, presses or releases the button when the player uses the interact key next to it.
-
-	// Only a player within reach can use it
+	// 1. Only a player within reach can use it
 	auto button = GetSelf<Area3D>(instance);
 	if (!PlayerInReach(button)) return;
 
-	// Flip and show the new state
+	// 2. Flip and show the new state
 	bool on = !(bool)button->get_meta("on", false);
 	button->set_meta("on", on);
 	ShowState(button, on);
 	PlaySound(button, SOUND_BUTTON);
 
-	// Tell the element this button drives, if one was chosen in the inspector
+	// 3. Tell the element this button drives, if one was chosen in the inspector
 	Node* driven = button->get_node_or_null((NodePath)button->get_meta("target", NodePath()));
 	if (!driven) return;
 
-	// Something with two positions of its own, such as a turntable, is simply flipped
+	// 4. Something with two positions of its own, such as a turntable, is simply flipped
 	if (driven->has_method("Toggle"))
 	{
 		driven->call("Toggle");
 		return;
 	}
 
-	// Anything else is switched on and off with the button
+	// 5. Anything else is switched on and off with the button
 	if (driven->has_method(on ? "Activate" : "Deactivate")) driven->call(on ? "Activate" : "Deactivate");
 }
+
+// Part of the element contract, remembers the active view, which decides how close the player must be
 void OnViewChanged(Caller* instance, int view)
 {
-	// Purpose: part of the element contract, remembers the active view, which decides how close the player must be.
-
 	// Store the view
 	GetSelf<Area3D>(instance)->set_meta("view", view);
 }
+
+// Part of the element contract, releases the button when the level restarts
 void Reset(Caller* instance)
 {
-	// Purpose: part of the element contract, releases the button when the level restarts.
-
 	// Back to off, its target resets itself through its own contract
 	auto button = GetSelf<Area3D>(instance);
 	button->set_meta("on", false);
 	ShowState(button, false);
 }
 
-// Routines
+// ---- Routines ----
+
+// Called once the node and its children are in the tree, prepares the button
 void OnReady(Caller* instance)
 {
-	// Purpose: called once the node and its children are in the tree, prepares the button.
-
 	// Copy the inspector setting onto the node, where every function can read it safely
 	auto button = GetSelf<Area3D>(instance);
 	button->set_meta("target", target);

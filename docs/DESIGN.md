@@ -1,9 +1,9 @@
-# Camundrum — Game Plan
+# Camundrum — Game Design
 
 A 3D puzzle platformer in Godot 4.7 with C++ scripts through the Jenova Framework.
 One character, one level, three ways of reading it: **side**, **top** and **iso**.
 
-Nothing in this plan is built yet except an empty test scene (`main.tscn`).
+This is the design document the game was built from: the rules of the three views, every mechanic, how levels are made, and the roadmap as it was followed.
 
 ---
 
@@ -76,7 +76,8 @@ Every element answers the same four questions: what it does in side, in top, in 
 | **Depth lift** | E on it: next stop, moved in depth unseen; only the arrival has to be free | same as side | E on it: slides there with its riders; anything in the way stops it | `depth_lift.tscn`. `stop_count` stops, `stop_step` apart, going deeper towards the board from where it is placed (stop 0). A digital display on its front shows the stop. In every view the layout is judged as in iso |
 | **Fan** | touching its column blows you off the level: tossed up a little, in front of everything, you fall through it all out of sight and die when out of the level, a crate is lost the same way; a switch to side that would leave something inside the column is refused | a jump seen from above: standing on it raises the player or a crate, which can then go over anything (walls, doors, crates); it stays up while over something solid; after the fan's jump it also stays up 0.3 s in the air, so it can reach a wall nearby or jump a short gap, but walking off a wall brings it straight down. Up there it comes forward towards the camera with its shadow slipping off to the side. Its depth never changes | blows the player and crates away from the board, up to the first solid piece in front | `fan.tscn`, on the board's face like a hole, group `fan`. Leaving top while up on something: to side it falls into the void the same visible way (`DropIntoVoid`); to iso it appears against the front face of what it stood on (`PlaceRaisedBodies` in the DepthController). Raised bodies use collision layer `LAYER_RAISED` and only meet the board's edges and each other. `wind_speed` (7), `starts_on`; a lever, button or plate switches it. Test level `y_fan_test.tscn` (10) |
 | **Crate chains** | push along | push along | push along | A crate the player pushes moves together with every crate lined up touching in front of it, as one block in the same frame (`MoveRow` in `CrateBody.h`): each crate is tested against the world with the rest of the row left out, and the row goes as far as its most blocked crate allows. Only a push from the side counts in side and iso; standing on a crate does not push it. Crates also come 2 and 3 tall (`crate_tall2.tscn`, `crate_tall3.tscn`); stairs puzzle in `x_crate_stairs.tscn` (9) |
-| **Robot** | drives left and right, with gravity | drives up and down, no gravity | falls and keeps the line of the last flat view: depth after top, left and right after side (depth if it never left iso) | `robot.tscn`, a grey crate with a red antenna that blinks while on, group `robot`. Off at the start (`starts_on`); E next to it switches it on and off, and a lever, button or plate can too. Bumping into a wall, a blocked row of crates, another robot or the player sends it back the other way. It pushes crates, carries the player and crates standing on it, and cannot be pushed. Two senses are kept: left/right, and one shared by top's up/down and iso's depth (up in top = towards the camera in iso). `starts_forward` picks right/up/towards the camera, `move_speed` (2). Otherwise it is a crate: plates, holes, void, rivers and fans treat it the same (`CrateBody.h`). Example level `game/09_z_robot_test.tscn` ("el ascensor de cristal": steer the robot through top, iso and side onto a glass ledge) |
+| **Robot** | drives left and right, with gravity | drives up and down, no gravity | falls and keeps the line of the last flat view: depth after top, left and right after side (depth if it never left iso) | `robot.tscn`, a grey crate with a red antenna that blinks while on, group `robot`. Off at the start (`starts_on`); E next to it switches it on and off, and a lever, button or plate can too. Bumping into a wall, a blocked row of crates, another robot or the player sends it back the other way. In side and iso its wheels only drive on the ground: while it falls it drops straight down and drives on once it lands (so a robot raised in top cannot drift onto a ledge when switching to side). It pushes crates, carries the player and crates standing on it, and cannot be pushed. Two senses are kept: left/right, and one shared by top's up/down and iso's depth (up in top = towards the camera in iso). `starts_forward` picks right/up/towards the camera, `move_speed` (2). Otherwise it is a crate: plates, holes, void, rivers and fans treat it the same (`CrateBody.h`). Example level `game/09_z_robot_test.tscn` ("el ascensor de cristal": steer the robot through top, iso and side onto a glass ledge) |
+| **Activatable platform** | a ghost until activated, then a solid ledge | a ghost until activated, then a wall | a ghost until activated, then solid | `active_platform.tscn`. Waits in its place see-through (and letting everything pass) until a plate, lever or button activates it; then it turns solid and opaque with a small pop. It does not sink like a door, so it suits pieces floating in the air. `starts_active`, `stays_active`. Example: `game/07_lvl5.tscn`, where the robot climbs through the ghost in top, presses the board plate and then lands on the platform in side |
 | **Wall button** | toggle on interact, depth ignored | toggle on interact, depth ignored | toggle when standing in front of it | Mounted on the board or as a child of a block or door, its local +Y pointing out of the face. Always in sight, so it can be pressed from the front edge. Test level `wall_button_test.tscn` (7) |
 | **Key and lock** | pick up, open lock | pick up, open lock | pick up, open lock | |
 | **Hole in the board** | nothing, just background | the player falls in and dies | visible gap behind the level | Gives top view its own hazard |
@@ -258,6 +259,12 @@ Done when: a new player can tell which view is active and how deep they are.
 Done when: several levels can be played in a row.
 
 ---
+
+## 7a. Game levels and the sandbox
+
+The eight game levels live in `scenes/levels/game` and are played in order: `01_first_steps`, `02_crate_stairs`, `03_plate_and_door`, `04_wind_cannon`, `05_river_and_fan`, `06_glass_lift`, `07_robot_steps`, `08_the_border`.
+
+`scenes/levels/sandbox` keeps the test rooms used while building each mechanic. Set `level_number` on the `Game` node to the index of one of them (sorted by name) to play it straight away. Some mechanics only appear there for now, as working prototypes: spikes (`Hazard`), the turntable, the floor swap, the depth lift, the wall button and the lever.
 
 ## 7b. Making the game's levels
 

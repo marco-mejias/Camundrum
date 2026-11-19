@@ -1,5 +1,7 @@
 
-/* Camundrum - Level Controller */
+/* Camundrum - Level Controller
+ * Lists, loads and unlocks levels, saves progress, and cuts the board holes when a level loads.
+ */
 
 // Godot SDK
 #include <Godot/godot.hpp>
@@ -33,14 +35,13 @@ using namespace jenova::sdk;
 // Where the levels and the progress live
 // The game's levels are the scenes in the game folder, in order of name; test levels stay in the levels folder
 static const char* game_folder = "res://scenes/levels/game";
-static const char* test_folder = "res://scenes/levels";
+static const char* test_folder = "res://scenes/levels/sandbox";
 static const char* progress_file = "user://progress.cfg";
 
 // Level lists, kept outside the script block because Jenova cannot read these types inside it
+// List every scene in a folder, sorted by name, so each one gets a stable number
 static PackedStringArray ListScenes(const String& folder)
 {
-	// Purpose: list every scene in a folder, sorted by name, so each one gets a stable number.
-
 	// Read the folder, a packaged game lists scenes with an extra .remap ending
 	PackedStringArray found = DirAccess::get_files_at(folder);
 	PackedStringArray scenes;
@@ -55,18 +56,18 @@ static PackedStringArray ListScenes(const String& folder)
 	scenes.sort();
 	return scenes;
 }
+
+// Take the level out of the game and put a fresh copy of another level scene in its place, named Level
 static bool SwapLevel(Node* game, const String& path)
 {
-	// Purpose: take the level out of the game and put a fresh copy of another level scene in its place, named Level.
-
-	// Load the new level and make a copy of it
+	// 1. Load the new level and make a copy of it
 	Ref<Resource> resource = ResourceLoader::get_singleton()->load(path);
 	PackedScene* packed = (PackedScene*)resource.ptr();
 	if (!packed) return false;
 	Node* fresh = packed->instantiate();
 	if (!fresh) return false;
 
-	// The old level is freed at once, before the new one starts, so its scripts let go of their nodes first
+	// 2. The old level is freed at once, before the new one starts, so its scripts let go of their nodes first
 	Node* old = game->get_node_or_null("Level");
 	if (old)
 	{
@@ -74,19 +75,18 @@ static bool SwapLevel(Node* game, const String& path)
 		memdelete(old);
 	}
 
-	// Put the new level in its place under the same name
+	// 3. Put the new level in its place under the same name
 	fresh->set_name("Level");
 	game->add_child(fresh);
 	return true;
 }
 
 // Real holes, kept outside the script block because Jenova cannot read these types inside it
+// Rebuild a board as one-unit tiles, leaving out the cells that hold a hole, so the holes are real openings
+// Each hole is moved onto the centre of its cell and told that the board around it is open.
 static void CutBoard(Node3D* board, const std::vector<Node3D*>& holes)
 {
-	// Purpose: rebuild a board as one-unit tiles, leaving out the cells that hold a hole, so the holes are real openings.
-	// Each hole is moved onto the centre of its cell and told that the board around it is open.
-
-	// The board is drawn by its Mesh child, a box whose width and height must be whole units
+	// 1. The board is drawn by its Mesh child, a box whose width and height must be whole units
 	MeshInstance3D* mesh = (MeshInstance3D*)board->get_node_or_null("Mesh");
 	if (!mesh || holes.empty()) return;
 	Ref<Mesh> shape = mesh->get_mesh();
@@ -98,7 +98,7 @@ static void CutBoard(Node3D* board, const std::vector<Node3D*>& holes)
 	int rows = (int)roundf(size.y);
 	if (columns < 1 || rows < 1 || fabsf(size.x - (float)columns) > 0.01f || fabsf(size.y - (float)rows) > 0.01f) return;
 
-	// Find the cell of each hole, measured in the board's own space so a turned board works too
+	// 2. Find the cell of each hole, measured in the board's own space so a turned board works too
 	Transform3D to_world = mesh->get_global_transform();
 	Transform3D to_board = to_world.affine_inverse();
 	std::vector<bool> open(columns * rows, false);
@@ -113,7 +113,7 @@ static void CutBoard(Node3D* board, const std::vector<Node3D*>& holes)
 		cells[index] = row * columns + column;
 	}
 
-	// Each hole sits right at the centre of its cell, on the board's face, and learns whether board goes on above it
+	// 3. Each hole sits right at the centre of its cell, on the board's face, and learns whether board goes on above it
 	for (size_t index = 0; index < holes.size(); index++)
 	{
 		if (cells[index] < 0) continue;
@@ -125,7 +125,7 @@ static void CutBoard(Node3D* board, const std::vector<Node3D*>& holes)
 		holes[index]->call("MarkCut", wall_above ? 1 : 0);
 	}
 
-	// One tile for every cell that is not open, all drawn together, with the board's own material
+	// 4. One tile for every cell that is not open, all drawn together, with the board's own material
 	Ref<BoxMesh> tile;
 	tile.instantiate();
 	tile->set_size(Vector3(1.0f, 1.0f, size.z));
@@ -149,7 +149,7 @@ static void CutBoard(Node3D* board, const std::vector<Node3D*>& holes)
 		}
 	}
 
-	// The tiles take the place of the whole board's look, its collision stays as it is
+	// 5. The tiles take the place of the whole board's look, its collision stays as it is
 	MultiMeshInstance3D* drawn = memnew(MultiMeshInstance3D);
 	drawn->set_name("Tiles");
 	drawn->set_multimesh(tiles);
@@ -157,10 +157,10 @@ static void CutBoard(Node3D* board, const std::vector<Node3D*>& holes)
 	drawn->set_transform(mesh->get_transform());
 	mesh->set_visible(false);
 }
+
+// Find every board in a level, including boards on turning layers, and open the holes placed next to each one
 static void CutBoards(Node* parent)
 {
-	// Purpose: find every board in a level, including boards on turning layers, and open the holes placed next to each one.
-
 	// A board is a node called Board, its holes are the holes beside it under the same parent
 	for (int index = 0; index < parent->get_child_count(); index++)
 	{
@@ -183,25 +183,25 @@ static void CutBoards(Node* parent)
 JENOVA_SCRIPT_BEGIN
 
 // State
-Node* controller = nullptr;
-int unlocked = 1;
-int current = -1;
+Node* controller = nullptr; // This node
+int unlocked = 1; // How many game levels can be played
+int current = -1; // Game level being played, -1 for a sandbox level
 
-// Progress
+// ---- Progress ----
+
+// Write how far the player has got to the save file, so it is kept when the game closes
 void SaveProgress()
 {
-	// Purpose: write how far the player has got to the save file, so it is kept when the game closes.
-
 	// One value: how many levels are open
 	Ref<ConfigFile> file;
 	file.instantiate();
 	file->set_value("progress", "unlocked", unlocked);
 	file->save(progress_file);
 }
+
+// Read how far the player has got from the save file, starting with only the first level open
 void LoadProgress()
 {
-	// Purpose: read how far the player has got from the save file, starting with only the first level open.
-
 	// Without a save file only the first level is open
 	unlocked = 1;
 	Ref<ConfigFile> file;
@@ -211,34 +211,34 @@ void LoadProgress()
 	if (saved > unlocked) unlocked = saved;
 }
 
-// Queries
+// ---- Queries ----
+
+// Let the other modules ask how many levels the game has
+// Numbers are returned as decimals because calls between scripts cannot return a whole number reliably.
 double LevelCount()
 {
-	// Purpose: let the other modules ask how many levels the game has.
-	// Numbers are returned as decimals because calls between scripts cannot return a whole number reliably.
-
 	// Count the scenes in the game folder
 	return (double)ListScenes(game_folder).size();
 }
+
+// Let the other modules ask how many levels are open, the finished ones and the next one
 double UnlockedCount()
 {
-	// Purpose: let the other modules ask how many levels are open, the finished ones and the next one.
-
 	// Never more than the levels there are
 	int count = ListScenes(game_folder).size();
 	return (double)(unlocked < count ? unlocked : count);
 }
+
+// Let the other modules ask which game level is being played, or -1 for a test level or none
 double CurrentLevel()
 {
-	// Purpose: let the other modules ask which game level is being played, or -1 for a test level or none.
-
 	// Hand back the number of the level loaded last
 	return (double)current;
 }
+
+// Let the menu ask which level "Play" should start: the first one not finished yet, or the last one if all are
 double NextToPlay()
 {
-	// Purpose: let the menu ask which level "Play" should start: the first one not finished yet, or the last one if all are.
-
 	// The last open level, within the levels there are
 	int count = ListScenes(game_folder).size();
 	if (count == 0) return 0.0;
@@ -246,10 +246,10 @@ double NextToPlay()
 	if (next > count - 1) next = count - 1;
 	return (double)next;
 }
+
+// Let the menu ask for the name of a game level, from its file name without the leading number
 String LevelName(int index)
 {
-	// Purpose: let the menu ask for the name of a game level, from its file name without the leading number.
-
 	// Take the file name, drop the extension and a leading "01_" style number
 	PackedStringArray levels = ListScenes(game_folder);
 	if (index < 0 || index >= levels.size()) return String();
@@ -259,11 +259,11 @@ String LevelName(int index)
 	return name.replace("_", " ");
 }
 
-// Commands
+// ---- Commands ----
+
+// Let the GameManager load a game level by its number in the game folder
 bool LoadGameLevel(int index)
 {
-	// Purpose: let the GameManager load a game level by its number in the game folder.
-
 	// Ignore numbers that do not exist
 	PackedStringArray levels = ListScenes(game_folder);
 	if (index < 0 || index >= levels.size()) return false;
@@ -272,10 +272,10 @@ bool LoadGameLevel(int index)
 	Output("Playing game level %d: %s", index + 1, GetCStr(levels[index].get_file().get_basename()));
 	return true;
 }
+
+// Let the GameManager load a test level by its number in the levels folder, the level_number setting on the Game node
 bool LoadTestLevel(int number)
 {
-	// Purpose: let the GameManager load a test level by its number in the levels folder, the level_number setting on the Game node.
-
 	// Print the numbered list, so the right number can be looked up in the output panel
 	PackedStringArray levels = ListScenes(test_folder);
 	for (int index = 0; index < levels.size(); index++) Output("Level %d: %s", index, GetCStr(levels[index].get_file().get_basename()));
@@ -291,37 +291,36 @@ bool LoadTestLevel(int number)
 	Output("Playing level %d: %s", number, GetCStr(levels[number].get_file().get_basename()));
 	return true;
 }
+
+// Let the GameManager record that the current game level was finished, which opens the next one
 void CompleteCurrent()
 {
-	// Purpose: let the GameManager record that the current game level was finished, which opens the next one.
-
 	// Test levels do not count towards progress
 	if (current < 0) return;
 	if (current + 2 > unlocked) unlocked = current + 2;
 	SaveProgress();
 }
 
+// Let the GameManager get a level ready once it is in the game: its boards are opened where holes were placed
 void PrepareLevel(Node* level)
 {
-	// Purpose: let the GameManager get a level ready once it is in the game: its boards are opened where holes were placed.
-
 	// Open the holes in every board
 	if (level) CutBoards(level);
 }
 
-// Routines
+// ---- Routines ----
+
+// Called once the node is in the tree, reads the saved progress
 void OnReady(Caller* instance)
 {
-	// Purpose: called once the node is in the tree, reads the saved progress.
-
 	// Keep this node, its parent is the Game node where levels are placed
 	controller = GetSelf<Node>(instance);
 	LoadProgress();
 }
+
+// Called when the node leaves the scene tree, drops the node reference
 void OnDestroy(Caller* instance)
 {
-	// Purpose: called when the node leaves the scene tree, drops the node reference.
-
 	// Forget it so nothing uses it after it is freed
 	controller = nullptr;
 }

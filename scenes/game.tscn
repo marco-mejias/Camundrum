@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://d1626pkv4ef06" path="res://scripts/GameManager.cpp" id="1_gm"]
 [ext_resource type="Script" uid="uid://c6qn7uctprqgp" path="res://scripts/InputController.cpp" id="2_in"]
 [ext_resource type="Script" uid="uid://brxjsxiy4n6yv" path="res://scripts/CameraController.cpp" id="3_cam"]
-[ext_resource type="PackedScene" path="res://scenes/levels/around_up_drop.tscn" id="4_lvl"]
+[ext_resource type="PackedScene" path="res://scenes/levels/game/01_first_steps.tscn" id="4_lvl"]
 [ext_resource type="Script" uid="uid://yrpo3h32ummf" path="res://scripts/DepthController.cpp" id="5_depth"]
 [ext_resource type="Script" uid="uid://d0xte43qt403p" path="res://scripts/UIController.cpp" id="6_ui"]
 [ext_resource type="Script" uid="uid://cx8ujsvm0usl8" path="res://scripts/AudioController.cpp" id="7_audio"]
@@ -14,7 +14,11 @@
 [sub_resource type="Environment" id="Environment_game"]
 ambient_light_source = 2
 ambient_light_color = Color(1, 1, 1, 1)
-ambient_light_energy = 0.22
+ambient_light_energy = 0.15
+tonemap_mode = 2
+ssao_enabled = true
+ssao_radius = 1.2
+ssao_intensity = 2.5
 glow_enabled = true
 glow_intensity = 1.6
 glow_strength = 1.0
@@ -137,6 +141,11 @@ environment = SubResource("Environment_game")
 
 [node name="Background" type="Node3D" parent="."]
 script = ExtResource("9_background")
+
+[node name="FillLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, 0.354, -0.354, 0, 0.707, 0.707, 0.5, -0.612, 0.612, 0, 10, 0)
+light_energy = 0.15
+light_color = Color(0.85, 0.9, 1, 1)
 
 [node name="Settings" type="Node" parent="."]
 script = ExtResource("10_settings")
